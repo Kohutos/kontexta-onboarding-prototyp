@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kontexta — Úvodní dotazník v4</title>
+<style>
+  :root { color-scheme: light; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f4f3fb;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+  .wizard {
+    width: 100%;
+    max-width: 640px;
+    background: linear-gradient(150deg, #1a1333 0%, #241a4d 45%, #1d1640 100%);
+    border-radius: 24px;
+    color: #fff;
+    box-shadow: 0 24px 60px rgba(40,25,100,.35);
+    overflow: hidden;
+    position: relative;
+  }
+  .glow { position:absolute; width:340px; height:340px; border-radius:50%; filter:blur(90px); opacity:.35; pointer-events:none; }
+  .glow.g1 { background:#7c3aed; top:-120px; right:-100px; }
+  .glow.g2 { background:#4f46e5; bottom:-140px; left:-110px; }
+
+  .topbar { display:flex; align-items:center; justify-content:space-between; padding:20px 28px 0; position:relative; z-index:2; }
+  .logo { font-weight:800; font-size:15px; letter-spacing:.5px; }
+  .logo span { background:linear-gradient(90deg,#a78bfa,#818cf8); -webkit-background-clip:text; background-clip:text; color:transparent; }
+
+  .progress-wrap { padding:14px 28px 0; position:relative; z-index:2; }
+  .progress-bg { height:6px; background:rgba(255,255,255,.12); border-radius:99px; overflow:hidden; }
+  .progress-fill { height:100%; border-radius:99px; background:linear-gradient(90deg,#8b5cf6,#6366f1); width:0%; transition:width .45s cubic-bezier(.4,0,.2,1); }
+
+  .screen { padding:28px 28px 26px; position:relative; z-index:2; display:none; animation:fadeIn .35s ease; }
+  .screen.active { display:block; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(10px);} to { opacity:1; transform:translateY(0);} }
+
+  .eyebrow { display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.2px; color:#c4b5fd; background:rgba(139,92,246,.15); border:1px solid rgba(139,92,246,.35); padding:5px 12px; border-radius:99px; margin-bottom:14px; }
+  .eyebrow.tip { color:#fde68a; background:rgba(250,204,21,.12); border-color:rgba(250,204,21,.35); }
+  h1 { font-size:23px; font-weight:800; line-height:1.28; margin-bottom:9px; }
+  h1 em { font-style:normal; background:linear-gradient(90deg,#a78bfa,#818cf8); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .sub { font-size:13.5px; color:rgba(255,255,255,.65); line-height:1.6; margin-bottom:18px; }
+  .sub b { color:rgba(255,255,255,.85); }
+
+  label.fld { display:block; font-size:12px; font-weight:700; color:rgba(255,255,255,.75); margin:14px 0 7px; text-transform:uppercase; letter-spacing:.6px; }
+  input[type=text], textarea {
+    width:100%; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.16);
+    border-radius:12px; padding:13px 15px; color:#fff; font-size:14px; font-family:inherit; outline:none; transition:border .2s;
+  }
+  input:focus, textarea:focus { border-color:#8b5cf6; }
+  textarea { resize:vertical; min-height:70px; }
+  ::placeholder { color:rgba(255,255,255,.35); }
+
+  .opts { display:flex; flex-direction:column; gap:9px; margin-bottom:4px; }
+  .opt {
+    display:flex; align-items:center; gap:13px; padding:13px 16px; border-radius:14px;
+    background:rgba(255,255,255,.06); border:1.5px solid rgba(255,255,255,.13);
+    cursor:pointer; transition:all .18s; font-size:14px; font-weight:600;
+  }
+  .opt:hover { background:rgba(139,92,246,.14); border-color:rgba(139,92,246,.5); }
+  .opt.sel { background:rgba(139,92,246,.22); border-color:#8b5cf6; box-shadow:0 0 0 3px rgba(139,92,246,.18); }
+  .opt .ico { font-size:19px; width:26px; text-align:center; flex-shrink:0; }
+  .opt .lbl small { display:block; font-weight:500; font-size:12px; color:rgba(255,255,255,.55); margin-top:2px; }
+  .opt.correct { background:rgba(34,197,94,.18); border-color:#22c55e; }
+  .opt.wrong { background:rgba(239,68,68,.15); border-color:#ef4444; }
+
+  .later { display:flex; align-items:center; gap:9px; margin-top:13px; font-size:13px; color:rgba(255,255,255,.6); cursor:pointer; user-select:none; }
+  .later input { width:auto; accent-color:#8b5cf6; }
+
+  .hint { display:flex; gap:9px; align-items:flex-start; background:rgba(99,102,241,.13); border:1px solid rgba(99,102,241,.3); border-radius:12px; padding:11px 14px; font-size:12.5px; color:rgba(255,255,255,.75); line-height:1.55; margin-top:14px; }
+  .hint.gold { background:rgba(250,204,21,.08); border-color:rgba(250,204,21,.3); }
+  .quiz-explain { display:none; background:rgba(34,197,94,.1); border:1px solid rgba(34,197,94,.35); border-radius:12px; padding:12px 14px; font-size:12.5px; line-height:1.6; color:rgba(255,255,255,.85); margin-top:13px; }
+  .quiz-explain.show { display:block; animation:fadeIn .3s ease; }
+
+  .demo-box { background:rgba(0,0,0,.28); border:1px solid rgba(255,255,255,.13); border-radius:14px; padding:14px 17px; font-size:13px; line-height:1.65; color:rgba(255,255,255,.82); min-height:90px; }
+  .demo-box .dim { color:rgba(255,255,255,.45); }
+  .demo-label { font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:1px; color:rgba(255,255,255,.45); margin:14px 0 6px; }
+
+  .cmp-btns { display:flex; gap:10px; margin:6px 0 0; }
+  .cmp-btn { flex:1; padding:13px 10px; border-radius:13px; font-size:13px; font-weight:800; text-align:center; cursor:pointer; border:2px solid rgba(255,255,255,.18); background:rgba(255,255,255,.06); transition:all .18s; }
+  .cmp-btn:hover { border-color:#8b5cf6; }
+  .cmp-btn.sel { background:rgba(139,92,246,.25); border-color:#8b5cf6; }
+  .cmp-btn.pulse { animation:pulse 1.4s infinite; }
+  @keyframes pulse { 0%,100% { box-shadow:0 0 0 0 rgba(139,92,246,.55);} 50% { box-shadow:0 0 0 8px rgba(139,92,246,0);} }
+
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 4px; }
+  .chip { padding:9px 14px; border-radius:12px; background:rgba(255,255,255,.08); border:1.5px solid rgba(255,255,255,.18); font-size:12px; font-weight:700; cursor:pointer; transition:all .15s; line-height:1.4; }
+  .chip:hover { background:rgba(139,92,246,.2); border-color:#8b5cf6; }
+  .chip.sel { background:linear-gradient(90deg,#8b5cf6,#6366f1); border-color:transparent; }
+
+  .upsell-box { background:linear-gradient(135deg, rgba(139,92,246,.25), rgba(79,70,229,.2)); border:1.5px solid rgba(167,139,250,.5); border-radius:18px; padding:22px; margin-bottom:14px; }
+  .upsell-badge { display:inline-block; background:#facc15; color:#1a1333; font-size:11px; font-weight:800; padding:4px 11px; border-radius:99px; margin-bottom:12px; text-transform:uppercase; letter-spacing:.8px; }
+  .upsell-box h2 { font-size:18px; font-weight:800; margin-bottom:8px; line-height:1.3; }
+  .upsell-box ul { list-style:none; margin:12px 0 16px; }
+  .upsell-box li { font-size:13px; color:rgba(255,255,255,.78); padding:4px 0 4px 26px; position:relative; line-height:1.5; }
+  .upsell-box li::before { content:"✓"; position:absolute; left:2px; color:#a78bfa; font-weight:800; }
+  .price-row { display:flex; align-items:baseline; gap:10px; margin-bottom:12px; }
+  .price { font-size:26px; font-weight:800; color:#facc15; }
+  .price-old { font-size:15px; color:rgba(255,255,255,.45); text-decoration:line-through; }
+  .price-note { font-size:11.5px; color:rgba(255,255,255,.5); }
+
+  .btnrow { display:flex; gap:11px; margin-top:22px; }
+  .btn {
+    flex:1; padding:14px 20px; border-radius:13px; border:none; font-family:inherit;
+    font-size:14.5px; font-weight:700; cursor:pointer; transition:all .18s;
+  }
+  .btn-primary { background:linear-gradient(90deg,#8b5cf6,#6366f1); color:#fff; box-shadow:0 8px 24px rgba(124,58,237,.4); }
+  .btn-primary:hover { transform:translateY(-1px); box-shadow:0 12px 28px rgba(124,58,237,.5); }
+  .btn-primary:disabled { opacity:.4; cursor:not-allowed; transform:none; box-shadow:none; }
+  .btn-ghost { background:rgba(255,255,255,.08); color:rgba(255,255,255,.7); border:1px solid rgba(255,255,255,.15); flex:0 0 auto; }
+  .btn-ghost:hover { background:rgba(255,255,255,.14); }
+  .btn-decline { background:transparent; color:rgba(255,255,255,.5); border:none; font-weight:600; font-size:13px; }
+  .btn-decline:hover { color:rgba(255,255,255,.8); }
+
+  .summary { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12); border-radius:14px; padding:18px; margin-bottom:14px; }
+  .summary h3 { font-size:11px; text-transform:uppercase; letter-spacing:1px; color:#a78bfa; margin-bottom:10px; font-weight:800; }
+  .srow { display:flex; justify-content:space-between; gap:16px; padding:6px 0; border-bottom:1px dashed rgba(255,255,255,.08); font-size:13px; }
+  .srow:last-child { border:none; }
+  .srow .k { color:rgba(255,255,255,.5); flex-shrink:0; }
+  .srow .v { font-weight:600; text-align:right; }
+  .v.pending { color:#facc15; font-weight:500; font-style:italic; }
+
+  .shot { width:100%; display:block; border-radius:12px; border:1px solid rgba(255,255,255,.16); margin-top:14px; box-shadow:0 10px 30px rgba(0,0,0,.35); }
+  .shotcap { font-size:11.5px; color:rgba(255,255,255,.5); margin-top:7px; line-height:1.5; text-align:center; }
+
+  /* --- mini mockupy aplikace --- */
+  .mock { background:#0c0a16; border:1px solid rgba(255,255,255,.15); border-radius:12px; margin-top:14px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,.35); }
+  .mock-nav { display:flex; align-items:center; gap:10px; padding:8px 12px; background:#06050c; border-bottom:1px solid rgba(255,255,255,.08); }
+  .mock-logo { font-size:10px; font-weight:800; }
+  .mock-logo b { color:#818cf8; }
+  .mock-tab { font-size:8.5px; color:rgba(255,255,255,.5); font-weight:600; }
+  .mock-tab.on { color:#fff; background:rgba(139,92,246,.3); padding:3px 8px; border-radius:99px; }
+  .mock-body { padding:12px; }
+  .mock h4 { font-size:13px; font-weight:800; margin-bottom:3px; }
+  .mock .m-sub { font-size:8.5px; color:rgba(255,255,255,.45); margin-bottom:9px; }
+
+  .kanban { display:flex; gap:6px; }
+  .kcol { flex:1; border-radius:8px; padding:6px; border:1px solid rgba(255,255,255,.1); }
+  .kcol h5 { font-size:7.5px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; margin-bottom:5px; display:flex; align-items:center; gap:4px; }
+  .kdot { width:5px; height:5px; border-radius:50%; display:inline-block; }
+  .kcard { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12); border-radius:6px; padding:6px; font-size:8px; font-weight:600; line-height:1.35; margin-bottom:5px; }
+  .kcard .kdate { display:block; font-size:6.5px; color:rgba(255,255,255,.4); margin-top:3px; font-weight:500; }
+  .kcard.done .ktxt { text-decoration:line-through; color:#4ade80; }
+
+  .m-search { display:flex; align-items:center; gap:8px; background:rgba(255,255,255,.06); border:1px solid rgba(139,92,246,.6); border-radius:99px; padding:8px 12px; font-size:9px; color:rgba(255,255,255,.4); margin-bottom:8px; }
+  .m-search .go { margin-left:auto; background:linear-gradient(90deg,#8b5cf6,#6366f1); color:#fff; font-size:8px; font-weight:700; padding:4px 10px; border-radius:99px; }
+  .m-filters { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:9px; }
+  .m-pill { font-size:7.5px; font-weight:700; color:rgba(255,255,255,.65); background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.13); padding:4px 8px; border-radius:99px; }
+  .m-cards { display:flex; gap:6px; }
+  .m-card { flex:1; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12); border-radius:7px; padding:7px; font-size:7.5px; font-weight:600; line-height:1.4; color:rgba(255,255,255,.75); }
+  .m-foot { text-align:center; font-size:7px; color:rgba(255,255,255,.35); margin-top:8px; }
+
+  .cv-doc { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1); border-radius:8px; padding:10px; }
+  .cv-p { font-size:8.5px; line-height:1.55; color:rgba(255,255,255,.55); margin-bottom:7px; }
+  .cv-p.sel { color:#fff; background:rgba(139,92,246,.18); border:1.5px solid #8b5cf6; border-radius:6px; padding:6px; position:relative; }
+  .cv-tool { display:inline-flex; align-items:center; gap:6px; background:#1d1640; border:1px solid rgba(167,139,250,.6); border-radius:99px; padding:5px 10px; font-size:8px; font-weight:700; margin-top:2px; box-shadow:0 6px 16px rgba(0,0,0,.4); }
+  .cv-tool span { color:#c4b5fd; }
+
+  /* --- pain / relief --- */
+  .bigemoji { text-align:center; font-size:46px; margin:12px 0 6px; }
+  .paincap { text-align:center; font-size:12px; font-weight:700; color:rgba(255,255,255,.5); margin-bottom:14px; letter-spacing:.5px; }
+  .pcards { display:flex; flex-direction:column; gap:13px; max-width:420px; margin:0 auto; }
+  .pcard { background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.13); border-radius:16px; padding:16px 20px; font-size:14.5px; font-weight:700; text-align:center; box-shadow:0 8px 22px rgba(0,0,0,.3); }
+  .pcard.ok { background:rgba(34,197,94,.1); border-color:rgba(74,222,128,.45); transform:none; display:flex; align-items:center; justify-content:center; gap:10px; }
+  .pcard.ok span { color:#4ade80; font-weight:800; }
+
+  /* --- ladění na míru --- */
+  .orb { width:170px; height:170px; border-radius:50%; margin:26px auto 18px; display:flex; align-items:baseline; justify-content:center; align-items:center; background:radial-gradient(circle at 30% 25%, #a78bfa 0%, #4338ca 55%, #2e1f6e 100%); box-shadow:0 0 70px rgba(124,58,237,.55), inset 0 0 40px rgba(255,255,255,.08); font-size:46px; font-weight:800; }
+  .orb small { font-size:18px; font-weight:700; color:rgba(255,255,255,.7); margin-left:2px; }
+  .orb-status { text-align:center; font-size:13px; color:rgba(255,255,255,.6); min-height:20px; animation:fadeIn .3s ease; }
+
+  .confetti { font-size:44px; text-align:center; margin-bottom:12px; }
+  .devnote { margin:16px 28px 20px; position:relative; z-index:2; font-size:11px; color:rgba(255,255,255,.35); line-height:1.5; border-top:1px solid rgba(255,255,255,.08); padding-top:12px; }
+</style>
+</head>
+<body>
+<div class="wizard">
+  <div class="glow g1"></div><div class="glow g2"></div>
+  <div class="topbar">
+    <div class="logo">kon<span>texta</span></div>
+  </div>
+  <div class="progress-wrap"><div class="progress-bg"><div class="progress-fill" id="pfill"></div></div></div>
+
+  <!-- 1: VÍTEJTE + JMÉNO -->
+  <div class="screen" data-id="welcome">
+    <div class="eyebrow">✦ Začínáme</div>
+    <h1>Vítejte v Kontextě! 👋<br>Pojďme nastavit <em>vašeho asistenta</em>.</h1>
+    <p class="sub">Pár krátkých otázek — a Kontexta bude psát přesně pro vaši práci. Cestou vám ukážeme triky, díky kterým z ní dostanete maximum. Vše se ukládá, nic nevyplníte dvakrát.</p>
+    <label class="fld">Jak se jmenujete?</label>
+    <input type="text" id="f_name" placeholder="Např. Jan Novák">
+    <div class="btnrow"><button class="btn btn-primary" onclick="next()">Pokračovat →</button></div>
+  </div>
+
+  <!-- 16b: PAIN — nacítění -->
+  <div class="screen" data-id="pain">
+    <div class="eyebrow">✦ Zní to povědomě?</div>
+    <h1 style="text-align:center">Neděle večer nad rozepsanou prací…</h1>
+    <div class="bigemoji">🤯</div>
+    <div class="paincap">Bez Kontexty</div>
+    <div class="pcards">
+      <div class="pcard" style="transform:rotate(-2.5deg)">37 otevřených tabů se „zdroji"</div>
+      <div class="pcard" style="transform:rotate(2deg)">Prázdná stránka a blikající kurzor</div>
+      <div class="pcard" style="transform:rotate(-1.5deg)">„Kde mám vůbec začít?"</div>
+    </div>
+    <div class="btnrow"><button class="btn btn-ghost" onclick="prev()">←</button><button class="btn btn-primary" onclick="next()">Až moc dobře to znám →</button></div>
+  </div>
+
+  <!-- 16: MKT motivace -->
+  <div class="screen" data-id="motivation">
+    <div class="eyebrow">✦ Rozumíme — není to lehké 🫶</div>
+    <h1>Co vás trápí <em>nejvíc</em>?</h1>
+    <p class="sub">Vyberte to hlavní — přizpůsobíme vám doporučení i obsah.</p>
+    <div class="opts" data-field="motivation">
+      <div class="opt" onclick="pick(this)"><span class="ico">🛡️</span><span class="lbl">Strach z plagiátorství a AI detekce <small>Bojím se, že práci neobhájím</small></span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">⏰</span><span class="lbl">Nedostatek času <small>Práce, škola, život… nestíhám</small></span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">📚</span><span class="lbl">Nevím, jak na akademické psaní <small>Struktura, zdroje, odborný styl</small></span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">🧭</span><span class="lbl">Chybí mi vedení <small>Vedoucí nereaguje, jsem na to sám/sama</small></span></div>
+    </div>
+    <div class="btnrow"><button class="btn btn-ghost" onclick="prev()">←</button><button class="btn btn-primary" onclick="next()">Pokračovat →</button></div>
+  </div>
+
+  <!-- 16c: RELIEF -->
+  <div class="screen" data-id="relief">
+    <div class="eyebrow">✦ Dobrá zpráva</div>
+    <h1 style="text-align:center">A takhle vypadá <em>stejný večer</em> s Kontextou</h1>
+    <div class="bigemoji">😌</div>
+    <div class="paincap" style="color:#4ade80">S Kontextou</div>
+    <div class="pcards">
+      <div class="pcard ok">Jasný plán kapitol <span>✓</span></div>
+      <div class="pcard ok">Text, který zní jako od vás <span>✓</span></div>
+      <div class="pcard ok">Citace vyřešené automaticky <span>✓</span></div>
+    </div>
+    <div class="btnrow"><button class="btn btn-ghost" onclick="prev()">←</button><button class="btn btn-primary" onclick="next()">Tak to chci →</button></div>
+  </div>
+
+  <!-- 16d: CÍL S KONTEXTOU -->
+  <div class="screen" data-id="kgoal">
+    <div class="eyebrow">✦ Váš cíl</div>
+    <h1>Čeho chcete s <em>Kontextou</em> dosáhnout?</h1>
+    <p class="sub">Vyberte, co je pro vás největší výhra:</p>
+    <div class="opts" data-field="kontextaGoal">
+      <div class="opt" onclick="pick(this)"><span class="ico">🎯</span><span class="lbl">Odevzdat a obhájit bez stresu</span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">⚖️</span><span class="lbl">Mít čas na život i mimo psaní</span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">🚀</span><span class="lbl">Odevzdat co nejdřív</span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">💎</span><span class="lbl">Napsat lepší práci, než bych zvládl/a sám/sama</span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">🧗</span><span class="lbl">Hlavně to tentokrát dotáhnout do konce</span></div>
+    </div>
+    <div class="btnrow"><button class="btn btn-ghost" onclick="prev()">←</button><button class="btn btn-primary" onclick="next()">Pokračovat →</button></div>
+  </div>
+
+  <!-- 2: MKT zdroj -->
+  <div class="screen" data-id="source">
+    <div class="eyebrow">✦ Rychlá otázka na úvod</div>
+    <h1>Odkud jste se o Kontextě dozvěděli?</h1>
+    <p class="sub">Pomůže nám to dostat Kontextu k dalším studentům, kteří ji potřebují.</p>
+    <div class="opts" data-field="source">
+      <div class="opt" onclick="pick(this)"><span class="ico">📸</span><span class="lbl">Instagram</span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">🎵</span><span class="lbl">TikTok</span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">🎥</span><span class="lbl">Webinář / masterclass Honzy Kohuta</span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">👥</span><span class="lbl">Doporučení od známého</span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">🔍</span><span class="lbl">Google / vyhledávání</span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">💬</span><span class="lbl">Jinde</span></div>
+    </div>
+    <div class="btnrow"><button class="btn btn-ghost" onclick="prev()">←</button><button class="btn btn-primary" onclick="next()">Pokračovat →</button></div>
+  </div>
+
+  <!-- 17: MKT co už zkoušeli (multi) -->
+  <div class="screen" data-id="tried">
+    <div class="eyebrow">✦ O vás</div>
+    <h1>Co jste na práci zkoušeli před Kontextou?</h1>
+    <p class="sub">Můžete vybrat víc možností.</p>
+    <div class="opts" data-field="tried" data-multi="1">
+      <div class="opt" onclick="pickMulti(this)"><span class="ico">🤖</span><span class="lbl">ChatGPT / Gemini / Claude</span></div>
+      <div class="opt" onclick="pickMulti(this)"><span class="ico">🧰</span><span class="lbl">Jiný AI nástroj na akademické psaní</span></div>
+      <div class="opt" onclick="pickMulti(this)"><span class="ico">✍️</span><span class="lbl">Psal(a) jsem všechno sám/sama</span></div>
+      <div class="opt" onclick="pickMulti(this)"><span class="ico">💼</span><span class="lbl">Placená pomoc <small>Konzultant, doučování, „píšící služba"</small></span></div>
+      <div class="opt" onclick="pickMulti(this)"><span class="ico">🆕</span><span class="lbl">Nic — Kontexta je můj první pokus</span></div>
+    </div>
+    <div class="btnrow"><button class="btn btn-ghost" onclick="prev()">←</button><button class="btn btn-primary" onclick="next()">Pokračovat →</button></div>
+  </div>
+
+  <!-- 18: MKT námitka -->
+  <div class="screen" data-id="objection">
+    <div class="eyebrow">✦ A upřímně…</div>
+    <h1>Co vás při rozhodování <em>málem zastavilo</em>?</h1>
+    <p class="sub">Buďte upřímní — pomáhá nám to Kontextu zlepšovat.</p>
+    <div class="opts" data-field="objection">
+      <div class="opt" onclick="pick(this)"><span class="ico">💰</span><span class="lbl">Cena</span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">🤔</span><span class="lbl">Pochybnost, jestli AI zvládne kvalitní text</span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">🕵️</span><span class="lbl">Strach, že se na použití AI přijde</span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">🇨🇿</span><span class="lbl">Jestli to bude umět dobře česky</span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">⚡</span><span class="lbl">Nic — šel/šla jsem do toho hned</span></div>
+    </div>
+    <div class="btnrow"><button class="btn btn-ghost" onclick="prev()">←</button><button class="btn btn-primary" onclick="next()">Pokračovat →</button></div>
+  </div>
+
+  <!-- 3: TYP PRÁCE -->
+  <div class="screen" data-id="degree">
+    <div class="eyebrow">✦ Pojďme nastavit asistenta</div>
+    <h1>Jakou práci píšete?</h1>
+    <p class="sub">Podle typu práce Kontexta přizpůsobí rozsah, hloubku i akademický styl.</p>
+    <div class="opts" data-field="degree">
+      <div class="opt" onclick="pick(this)"><span class="ico">🏫</span><span class="lbl">Maturitní práce</span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">🎓</span><span class="lbl">Bakalářská práce</span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">📘</span><span class="lbl">Diplomová práce</span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">🔬</span><span class="lbl">Disertační práce</span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">📄</span><span class="lbl">Seminární práce</span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">📝</span><span class="lbl">Jiná práce</span></div>
+    </div>
+    <div class="btnrow"><button class="btn btn-ghost" onclick="prev()">←</button><button class="btn btn-primary" onclick="next()">Pokračovat →</button></div>
+  </div>
+
+  <!-- 4: FÁZE -->
+  <div class="screen" data-id="phase">
+    <div class="eyebrow">✦ Kde právě jste</div>
+    <h1>V jaké fázi se nacházíte?</h1>
+    <p class="sub">Přizpůsobíme vám doporučení i tipy přesně tomu, kde právě jste.</p>
+    <div class="opts" data-field="phase">
+      <div class="opt" onclick="pick(this)"><span class="ico">🌱</span><span class="lbl">Teprve začínám <small>Hledám téma nebo zdroje</small></span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">📝</span><span class="lbl">Píšu <small>Mám osnovu, tvořím kapitoly</small></span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">🏁</span><span class="lbl">Finišuji <small>Dokončuji, ladím citace a formality</small></span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">🚨</span><span class="lbl">Hoří mi termín <small>Odevzdávám do pár týdnů</small></span></div>
+    </div>
+    <div class="btnrow"><button class="btn btn-ghost" onclick="prev()">←</button><button class="btn btn-primary" onclick="next()">Pokračovat →</button></div>
+  </div>
+
+  <!-- 5: DEADLINE -->
+  <div class="screen" data-id="deadline">
+    <div class="eyebrow">✦ Kde právě jste</div>
+    <h1>Kdy odevzdáváte?</h1>
+    <p class="sub">Podle termínu vám nastavíme tempo a připomeneme, co nepodcenit.</p>
+    <div class="opts" data-field="deadline">
+      <div class="opt" onclick="pick(this)"><span class="ico">🔥</span><span class="lbl">Do měsíce</span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">📅</span><span class="lbl">Do 3 měsíců</span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">🗓️</span><span class="lbl">Do půl roku</span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">🌤️</span><span class="lbl">Mám víc než půl roku</span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">🤷</span><span class="lbl">Ještě nevím</span></div>
+    </div>
+    <div class="btnrow"><button class="btn btn-ghost" onclick="prev()">←</button><button class="btn btn-primary" onclick="next()">Pokračovat →</button></div>
+  </div>
+
+  <!-- 6: TIP — Moje cíle -->
+  <div class="screen" data-id="tip-goals">
+    <div class="eyebrow tip">💡 Tip #1 — Přehled nade vším</div>
+    <h1>Vždycky budete vědět, <em>na čem právě makat</em></h1>
+    <p class="sub">V nástroji Moje cíle si práci rozdělíte na malé, zvládnutelné úkoly a přehledně si je zorganizujete. Na jeden pohled vidíte, co máte hotové, co je na řadě — a co přesně vás ještě dělí od odevzdané práce.</p>
+    <div class="mock">
+      <div class="mock-nav"><span class="mock-logo">⟪ <b>Kontexta</b></span><span class="mock-tab">Chat</span><span class="mock-tab">Zdroje</span><span class="mock-tab">Profil</span><span class="mock-tab on">Více</span></div>
+      <div class="mock-body">
+        <h4>Moje cíle</h4>
+        <div class="m-sub">Dávej si cíle a přesouvej je do dalších sloupců podle toho, jak se ti daří je plnit. · 1/6 splněno</div>
+        <div class="kanban">
+          <div class="kcol" style="border-color:rgba(255,255,255,.12)"><h5><span class="kdot" style="background:#9ca3af"></span>TO DO</h5><div class="kcard"><span class="ktxt">Dohledat zdroje pro teorii</span></div><div class="kcard"><span class="ktxt">Sepsat abstrakt</span></div></div>
+          <div class="kcol" style="border-color:rgba(59,130,246,.4)"><h5><span class="kdot" style="background:#3b82f6"></span>DOING</h5><div class="kcard"><span class="ktxt">Napsat úvod</span><span class="kdate">📅 19. 6. 2026</span></div></div>
+          <div class="kcol" style="border-color:rgba(249,115,22,.4)"><h5><span class="kdot" style="background:#f97316"></span>K OPRAVĚ</h5><div class="kcard"><span class="ktxt">Napsat 1. kapitolu</span><span class="kdate">⏰ 30. 11. 2025</span></div></div>
+          <div class="kcol" style="border-color:rgba(139,92,246,.4)"><h5><span class="kdot" style="background:#8b5cf6"></span>S VEDOUCÍM</h5><div class="kcard"><span class="ktxt">Validovat zadání a cíl</span></div></div>
+          <div class="kcol" style="border-color:rgba(34,197,94,.4)"><h5><span class="kdot" style="background:#22c55e"></span>HOTOVO</h5><div class="kcard done"><span class="ktxt">Vytvořit klíčová slova</span><span class="kdate">📅 15. 12. 2025</span></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="shotcap">Nástroj <b>Moje cíle</b> — organizace práce krok za krokem, od prvního úkolu k hotové práci.</div>
+    <div class="btnrow"><button class="btn btn-ghost" onclick="prev()">←</button><button class="btn btn-primary" onclick="next()">Pokračovat →</button></div>
+  </div>
+
+  <!-- 7: OBOR -->
+  <div class="screen" data-id="field">
+    <div class="eyebrow">✦ Vaše práce</div>
+    <h1>Jaký studujete obor?</h1>
+    <p class="sub">Kontexta píše jako odborný konzultant s 20+ lety praxe — ve <b>vašem</b> oboru.</p>
+    <label class="fld">Obor / zaměření</label>
+    <input type="text" id="f_field" placeholder="Např. Ekonomika a management">
+    <label class="fld">Škola (nepovinné)</label>
+    <input type="text" id="f_school" placeholder="Např. VŠE, MUNI, gymnázium…">
+    <div class="btnrow"><button class="btn btn-ghost" onclick="prev()">←</button><button class="btn btn-primary" onclick="next()">Pokračovat →</button></div>
+  </div>
+
+  <!-- 8: TIP — profil (návodné porovnání) -->
+  <div class="screen" data-id="tip-profile">
+    <div class="eyebrow tip">💡 Tip #2 — V čem je Kontexta jiná</div>
+    <h1>ChatGPT neví, kdo jste.<br><em>Kontexta ano.</em></h1>
+    <p class="sub">ChatGPT nebo Gemini začínají každou odpověď od nuly — neznají vaše téma, obor ani požadavky vaší školy. <b>Kontexta pracuje s vaším kontextem:</b> všechno, co tu vyplňujete, si pamatuje a přizpůsobuje tomu každou jednu odpověď. Píše vám na míru.</p>
+    <p class="sub" style="margin-bottom:8px"><b>👇 Vyzkoušejte si rozdíl sami.</b> Stejný dotaz — „Napiš mi úvod kapitoly" — a dva různé výsledky. Klikněte postupně na obě tlačítka:</p>
+    <div class="cmp-btns">
+      <div class="cmp-btn sel" id="cmp0" onclick="profDemo(0)">❌ Obyčejná AI<br><small style="font-weight:500;opacity:.6">bez profilu</small></div>
+      <div class="cmp-btn pulse" id="cmp1" onclick="profDemo(1)">✅ Kontexta<br><small style="font-weight:500;opacity:.6">s vaším profilem</small></div>
+    </div>
+    <div class="demo-label">Výsledek:</div>
+    <div class="demo-box" id="prof_demo">„Sociální sítě jsou v dnešní době velmi populární. Mnoho lidí je používá každý den. Tato práce se bude zabývat sociálními sítěmi…"<br><span class="dim">→ Obecné fráze. Žádná vazba na vaše téma. Na první pohled AI text.</span></div>
+    <img class="shot" src="data:image/webp;base64,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" alt="Sekce Profil v aplikaci Kontexta">
+    <div class="shotcap">Váš kontext žije v sekci <b>Profil</b> — vše, co teď vyplňujete, najdete (a kdykoliv upravíte) právě tady.</div>
+    <div class="btnrow"><button class="btn btn-ghost" onclick="prev()">←</button><button class="btn btn-primary" id="btn_prof" onclick="next()">Aha, chápu →</button></div>
+  </div>
+
+  <!-- 9: TÉMA -->
+  <div class="screen" data-id="topic">
+    <div class="eyebrow">✦ Vaše práce</div>
+    <h1>Jaké je téma vaší práce?</h1>
+    <p class="sub">Tohle je pro Kontextu to nejdůležitější. Klidně napište pracovní verzi.</p>
+    <label class="fld">Téma práce</label>
+    <input type="text" id="f_topic" placeholder="Např. Vliv sociálních sítí na nákupní chování Gen Z">
+    <label class="later"><input type="checkbox" id="later_topic"> Ještě nemám schválené téma — doplním později</label>
+    <div class="hint">🔄 Téma můžete kdykoliv změnit v sekci <b>Profil</b> — Kontexta se okamžitě přizpůsobí.</div>
+    <div class="btnrow"><button class="btn btn-ghost" onclick="prev()">←</button><button class="btn btn-primary" onclick="next()">Pokračovat →</button></div>
+  </div>
+
+  <!-- 10: CÍL -->
+  <div class="screen" data-id="goal">
+    <div class="eyebrow">✦ Vaše práce</div>
+    <h1>Co je cílem vaší práce?</h1>
+    <p class="sub">Cíl práce je věta, na kterou se Kontexta odkazuje v úvodu, závěru i každé kapitole.</p>
+    <label class="fld">Cíl práce</label>
+    <textarea id="f_goal" placeholder="Např. Cílem práce je analyzovat, jak sociální sítě ovlivňují nákupní rozhodování generace Z…"></textarea>
+    <label class="later"><input type="checkbox" id="later_goal"> Cíl ještě nemám — doplním později</label>
+    <div class="btnrow"><button class="btn btn-ghost" onclick="prev()">←</button><button class="btn btn-primary" onclick="next()">Pokračovat →</button></div>
+  </div>
+
+  <!-- 11: TIP — kvíz prompty -->
+  <div class="screen" data-id="tip-prompt">
+    <div class="eyebrow tip">💡 Tip #3 — Mini kvíz</div>
+    <h1>Který prompt vám napíše <em>lepší kapitolu</em>?</h1>
+    <p class="sub">Klikněte na ten, který byste poslali vy:</p>
+    <div class="opts">
+      <div class="opt" onclick="quiz(this,'prompt',false)"><span class="ico">🅰️</span><span class="lbl">„Napiš mi teoretickou část."</span></div>
+      <div class="opt" onclick="quiz(this,'prompt',true)"><span class="ico">🅱️</span><span class="lbl">„Napiš podkapitolu 2.1 Nákupní chování Gen Z, cca 600 slov, vycházej z mých nahraných zdrojů."</span></div>
+    </div>
+    <div class="quiz-explain" id="qx_prompt">✅ <b>Přesně tak — B!</b> Čím konkrétnější prompt (co napsat, kolik slov, z čeho vycházet), tím lepší text. Kontexta zbytek kontextu doplní z vašeho profilu sama.</div>
+    <div class="btnrow"><button class="btn btn-ghost" onclick="prev()">←</button><button class="btn btn-primary" id="btn_prompt" disabled onclick="next()">Pokračovat →</button></div>
+  </div>
+
+  <!-- 12: CITAČNÍ NORMA -->
+  <div class="screen" data-id="citation">
+    <div class="eyebrow">✦ Vaše práce</div>
+    <h1>Jakou citační normu vyžaduje vaše škola?</h1>
+    <p class="sub">Vyberte jednou — a víc to neřešíte.</p>
+    <div class="opts" data-field="citation">
+      <div class="opt" onclick="pick(this)"><span class="ico">🇨🇿</span><span class="lbl">ČSN ISO 690 <small>Nejčastější na českých školách</small></span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">🌍</span><span class="lbl">APA 7</span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">🎓</span><span class="lbl">Harvard</span></div>
+      <div class="opt" onclick="pick(this)"><span class="ico">🤷</span><span class="lbl">Nevím / zjistím později <small>Nastavíme ČSN ISO 690, kdykoliv změníte</small></span></div>
+    </div>
+    <div class="hint">📚 Od teď je to naše starost: Kontexta bude vaši normu automaticky držet při psaní, v odkazech v textu i v seznamu literatury. Žádné ruční formátování citací.</div>
+    <div class="btnrow"><button class="btn btn-ghost" onclick="prev()">←</button><button class="btn btn-primary" onclick="next()">Pokračovat →</button></div>
+  </div>
+
+  <!-- 13: TIP — kvíz zdroje -->
+  <div class="screen" data-id="tip-sources">
+    <div class="eyebrow tip">💡 Tip #4 — Mini kvíz</div>
+    <h1>Kde v Kontextě hledat <em>ověřené zdroje</em>?</h1>
+    <p class="sub">Tohle je nejčastější chyba nováčků:</p>
+    <div class="opts">
+      <div class="opt" onclick="quiz(this,'sources',false)"><span class="ico">💬</span><span class="lbl">Zeptám se v chatu, ať mi AI doporučí literaturu</span></div>
+      <div class="opt" onclick="quiz(this,'sources',true)"><span class="ico">🔎</span><span class="lbl">Použiju nástroj Zdroje <small>Vyhledávač akademických databází</small></span></div>
+      <div class="opt" onclick="quiz(this,'sources',false)"><span class="ico">🌐</span><span class="lbl">Vygooglím to</span></div>
+    </div>
+    <div class="quiz-explain" id="qx_sources">✅ <b>Správně — nástroj Zdroje!</b> Chat si může citace vymyslet. Nástroj Zdroje prohledává přes 200 milionů skutečných akademických článků, AI váš dotaz sama optimalizuje a výsledky si rovnou filtrujete podle roku či PDF. Nalezené zdroje pak nahrajte do práce — Kontexta z nich bude citovat.</div>
+    <div class="mock">
+      <div class="mock-nav"><span class="mock-logo">⟪ <b>Kontexta</b></span><span class="mock-tab">Chat</span><span class="mock-tab">Historie</span><span class="mock-tab on">Zdroje</span><span class="mock-tab">Profil</span></div>
+      <div class="mock-body" style="text-align:center">
+        <h4>Vyhledávání zdrojů</h4>
+        <div class="m-sub">Najděte akademické články, studie a publikace z databáze Semantic Scholar.<br>Napište otázku nebo klíčová slova — AI váš dotaz automaticky optimalizuje.</div>
+        <div class="m-search">🔍 Zadejte otázku nebo klíčová slova…<span class="go">Hledat</span></div>
+        <div class="m-filters"><span class="m-pill">⇅ Řadit: Relevance</span><span class="m-pill">📄 Pouze s PDF</span><span class="m-pill">📅 Poslední 2 roky</span><span class="m-pill">Poslední 5 let</span><span class="m-pill">2015–2020</span></div>
+        <div class="m-cards"><div class="m-card">📖 Jak umělá inteligence pomáhá ve vzdělávání?</div><div class="m-card">💾 Machine learning for sentiment analysis</div><div class="m-card">🔍 Vliv sociálních sítí na duševní zdraví mladých</div></div>
+        <div class="m-foot">Powered by Semantic Scholar — přes 200 milionů akademických článků</div>
+      </div>
+    </div>
+    <div class="shotcap">Nástroj <b>Zdroje</b> v aplikaci — skutečné akademické databáze, žádné vymyšlené citace.</div>
+    <div class="btnrow"><button class="btn btn-ghost" onclick="prev()">←</button><button class="btn btn-primary" id="btn_sources" disabled onclick="next()">Pokračovat →</button></div>
+  </div>
+
+  <!-- 14: TIP — Canvas -->
+  <div class="screen" data-id="tip-canvas">
+    <div class="eyebrow tip">💡 Tip #5 — Editujte jako profík</div>
+    <h1>Zapněte si <em>Canvas</em> — a upravujte jen to, co chcete</h1>
+    <p class="sub">Při psaní delších textů si zapněte Canvas. Text máte před sebou jako dokument: označíte odstavec, řeknete, co s ním — a Kontexta přepíše <b>jen vybranou část</b>. Zbytek textu zůstane netknutý. A kdykoliv můžete vybranou pasáž přepsat i sami, ručně.</p>
+    <div class="mock">
+      <div class="mock-nav"><span class="mock-logo">⟪ <b>Kontexta</b></span><span class="mock-tab on">Canvas</span><span class="mock-tab">Kapitola 2 — Teoretická část.docx</span></div>
+      <div class="mock-body">
+        <div class="cv-doc">
+          <div class="cv-p">Marketingová komunikace prošla v posledním desetiletí zásadní proměnou, kterou akcelerovala digitalizace spotřebitelského chování…</div>
+          <div class="cv-p sel">Nákupní rozhodování generace Z se formuje v prostředí algoritmicky kurátorovaného obsahu, jež starší kohorty spotřebitelů nezažily. Klíčovou roli sehrávají influenceři…</div>
+          <div class="cv-tool">✏️ <span>Upravit výběr:</span> „Zkrať na 50 slov a přidej citaci"</div>
+          <div class="cv-p" style="margin-top:7px">Z výše uvedeného vyplývá, že tradiční modely nákupního chování je třeba revidovat s ohledem na…</div>
+        </div>
+      </div>
+    </div>
+    <div class="shotcap"><b>Canvas</b> — označíte část textu, zadáte pokyn a upraví se pouze výběr.</div>
+    <div class="btnrow"><button class="btn btn-ghost" onclick="prev()">←</button><button class="btn btn-primary" onclick="next()">Pokračovat →</button></div>
+  </div>
+
+  <!-- 15: TIP — zpětná vazba (konkrétní prompty) -->
+  <div class="screen" data-id="tip-feedback">
+    <div class="eyebrow tip">💡 Tip #6 — Vyzkoušejte si</div>
+    <h1>Zpětná vazba: řekněte <em>co, kde a jak moc</em></h1>
+    <p class="sub">Nelíbí se vám výstup? Neklikejte „vygenerovat znovu". Napište konkrétní pokyn — co změnit, ve které části a v jakém rozsahu. Vyzkoušejte na ukázce:</p>
+    <div class="demo-label">Text od Kontexty:</div>
+    <div class="demo-box" id="fb_demo">„Sociální sítě představují významný fenomén současné doby, který zásadním způsobem ovlivňuje chování spotřebitelů, a to zejména u mladší generace, jež s nimi vyrůstala."</div>
+    <div class="demo-label">Klikněte na pokyn — přesně takhle ho v aplikaci napíšete:</div>
+    <div class="chips">
+      <span class="chip" onclick="fbDemo(this,'short')">„Zkrať tento odstavec na max 15 slov."</span>
+      <span class="chip" onclick="fbDemo(this,'formal')">„Přepiš formálněji a vyhni se slovu ‚zásadní'."</span>
+      <span class="chip" onclick="fbDemo(this,'example')">„Doplň konkrétní data z českého prostředí."</span>
+      <span class="chip" onclick="fbDemo(this,'sentence')">„Uprav pouze poslední část věty, zbytek nech."</span>
+    </div>
+    <div class="hint gold">⭐ Zlaté pravidlo zpětné vazby: <b>CO</b> změnit („zkrať", „přepiš", „doplň") + <b>KDE</b> přesně („tento odstavec", „poslední větu") + <b>JAK MOC</b> („na 80 slov", „o polovinu"). Kontexta se s každou iterací přibližuje vašemu stylu.</div>
+    <div class="btnrow"><button class="btn btn-ghost" onclick="prev()">←</button><button class="btn btn-primary" onclick="next()">Pokračovat →</button></div>
+  </div>
+
+  <!-- 19: UPSELL (dynamický) -->
+  <div class="screen" data-id="upsell">
+    <div class="eyebrow">🎁 Jednorázová nabídka</div>
+    <h1 id="up_title"></h1>
+    <p class="sub" id="up_sub"></p>
+    <div class="upsell-box">
+      <span class="upsell-badge">Pouze teď při registraci</span>
+      <h2 id="up_prod"></h2>
+      <ul id="up_list"></ul>
+      <div class="price-row"><span class="price" id="up_price"></span><span class="price-old" id="up_old"></span></div>
+      <div class="price-note">Jednorázová platba kartou, kterou jste použili při registraci. Okamžitý přístup.</div>
+    </div>
+    <div class="btnrow">
+      <button class="btn btn-primary" onclick="buyUpsell()">Přidat k mému účtu →</button>
+    </div>
+    <div class="btnrow" style="margin-top:8px">
+      <button class="btn btn-decline" onclick="declineUpsell()">Ne, děkuji — pokračovat bez bonusu</button>
+    </div>
+  </div>
+
+  <!-- 19b: LADÍME NA MÍRU -->
+  <div class="screen" data-id="building">
+    <div class="eyebrow" style="display:table;margin:0 auto 14px">✨ Ještě chviličku</div>
+    <h1 style="text-align:center">Ladíme Kontextu <em>přímo pro vás</em>…</h1>
+    <div class="orb"><span id="orb_pct">0</span><small>%</small></div>
+    <div class="orb-status" id="orb_status">Ukládám vaše téma a cíl…</div>
+  </div>
+
+  <!-- 20: HOTOVO -->
+  <div class="screen" data-id="done">
+    <div class="confetti">🎉</div>
+    <h1 style="text-align:center">Hotovo, <em id="done_name">studente</em>!<br>Váš asistent je připraven.</h1>
+    <p class="sub" style="text-align:center">Tohle se uložilo do vašeho profilu — kdykoliv to upravíte v sekci <b>Profil</b>.</p>
+    <div class="summary"><h3>📋 Váš profil</h3><div id="sum_profile"></div></div>
+    <div class="summary" style="border-color:rgba(139,92,246,.45); background:rgba(139,92,246,.08)">
+      <h3>🎬 Naučte se Kontextu naplno</h3>
+      <p style="font-size:13px; line-height:1.6; color:rgba(255,255,255,.75)">V <b>Knihovně videí</b> na vás čekají tutoriály ke všemu, co Kontexta umí — jak z ní dostat co nejkvalitnější texty za minimum času. Bez strachu z AI detekce a plagiátorství. Začněte videem <b>„Začínáš s Kontextou!? Tohle musíš vidět, než začneš!"</b></p>
+      <img class="shot" src="data:image/webp;base64,UklGRgY+AABXRUJQVlA4IPo9AACwHQGdASqAAhUCPp1MoE0lpCa/olWpi/ATiWdu7p6XHHayA13rWYLsCyXoGf6B/iXQXnS9G36Z9Ej07ekzzC/uD6uv5He5z+1eoB/ZvR39Sv0AOlY/yHngar153/2/bl/dvy189fFx5z/ff3c/xfzU/iuYO03+afcL9n/h/az/A/7H/P+Mfxq/2vUI/KP5z/oe/B7gfZPMI9pPsX/Y/zn7z/6z0i/7//IeqX6b/hf+p/kfye+wL+Rf1z/df3X2o/3XhT/Zv9H/4P9F+YH2A/zb+5f9r/If6r4bv7z/2f670DfUX/s/0XwD/z7+5f+L/Me3H////Z8If3d////m+Ib9y//+MIUBaaNHIyergV8WTKDWQgDKsgR7MidL08/WT3CgGyjs/ol6qvM4wbmPGhqKo8KGcpUUfevAwsENjvGZBZRrVvG+dj990yLytfL987H8Qfc/IZEWqXpPXZNHbyfR8xJnRfarXy/fOx++dmzGN83m98S/mCHlu7Zc6RAiIErI3icoIUPaeXmwZ1KcQCVvDWqGg9qtfL987H752P3zsfvnYSHpiAM1vephQe+dj987H752P3zsfvnY/cYcfLsXAealJ98FJ8i+QenuznJzg1uWzKZK5Df76cEkjSItj9nHwctfOgKXodxU0bpj987H8rdbrYvtVr5ibn+ParJTi7XeOuVbPo4Alsvu8nzAEn9mXdlIoQSFdSCOGhlnR+/9PkfoH1Jr5fvnZE2EijlFPjEsG5P0fPfu8EGXEZLw5qxqETnNlk0P3l5y9GD7vl++dj/d7eUHEVFS4nSZgx1B8Bru5TzB0X7j5DYjejxHJJCJwxnfWsZpopODS909EXJALOyqTYMZ+oLLqamEyPEgrmgl1llgLZLhvfVZUd19l9xbp7lEiAUCs7/al9QGy4GyBR5vc01k+yJEf6SfzpY9Vw2GwoXt0R18bt0o5Mp6Z6xKmwHwFFUBuwuefn5BO06zN4BPBX1Tu6r8wctbFzYurbGFTmzSgEioTk/xXjDJl25teU3fySWxAWkZ4QEydmwH44raPoOLWIi2P3z1A1wpWKlUZNFzM3xHJo8xLEFO842RMOZX9XNvNJ9EczIJCcMR1a+X76zb/OWbU2DqB3raA+Gzs9NEKIr8lkHmLMT0ytdbuYyUbyICRV/cj7sBx4grAH6zPdwQhEp3Gw4S/K0IXRxdo3nRJ7w7WO1xn4xA3S1rYKXFdELhkQxzl0x+G6jJyKaJVe/4psxsMa+dB1a9vNBMUSadKO1ZmXacBZ1ECHUyHNm5n2q18v3zsc44qMy9WgOomK/MtrBtwWW4/nf9Uz9J9/k2WTTwk5HuIsX2q1j8NqcMW+n/6WTgnbNZTLBfVtJzDziwtxUHVr5ekL5RGEO53hm76SwxlZTt0TcRq+PgW3ZGUKEeekZ0X2q18v3zsQv1lRALUIEtfn98lhD3WkRbH75owB6DxYza3GCfoEj5F8g9Pdlv1XT3eOE17bsfvnYuL+wUyiuNr2X1y41c4OStw+mJJyoqmeFgwi9K89LlZj43NTU9D9P6f0/p/T+inq+LBETsfveU8+ji/ywrjHBh+69NHbDqhbjm/u2wg+ELwOMvBV6VM0M4/iA1aHZeCd3jh+rp4oebUNVp1bg567oPh/99ZMixIMYLDeaVLSjFEXwZjXM+/fOx+95TurmyD+kMpM/Z6cuHRKXMQ3RdTafIKzVXp1lYvtVr6dx2L987H/QqapLREMLF7kj0R3JHojuSOJUxdIIsX2q2+ojH3DoFtmxHiJctmJ9v0FQGTrUfBNrVbAafJSLTlSLkWMC2a9ltN2RuPipCLUff35UqHG6sCFwYMGgNdtyefqC+EmEK0Fm2oxTyKQNdNTqOPy6Cm+XHJ5j1fq2rvl++dj3jACeaI/pWQvXd8gcvunPMEJI/TPPTSXkZQ060LDj8a9AX4jKTHBl/urRcCJRGQCAvH/JFHbMgHQhFl4DJ23ONLjRZT2M0BaT3J35t84D+l8siPaIn1cL9oFtDuAxplOP6E02RhgSPW6x1RvQKqo/1SrX//XpiH2RC7H752P+TrG16D49fbqNFEbo61WQFYWHJbQG/FXiJt437SLdOQyKkYtifP4vnOwFHMb0Gaga4PQccJ+C0nOgXMjleLjSyRLLz9k2wNvpVr5fvnrPmMZnLR2/uG0Zdb+nAZen2rkUX+b9poZGW5o4Ab+9b8DHXWqVe5t8EParXy/fOxtCIw5QPBJkTBY0kDGHqpzyLY/hDjSlO9+SIIiKp9ZRsIz4l3ayOzq/IKex5yjIXP7ar/jRtXYl2uRaaQvbcXcmjxD/ZNfnTqetlGozrvSwQMjTxLNv9g9Rkion1T6FgRxdqm9weS2Z8mu9LdParYG3vnAQV/BIsHGMe7s+JCTnjaWPBxTCdy7AL0Dis4TADets7/BrYWu77mZx+Nyafn5NW9OEthScXeXkcc0ICrzzD+EH7lVXAy6cDqN2kAStQOM0aBmhvhNF74tl6XviQUhg+ptGLkKBqa1kM4+YLNW7iTCgzLeuZkwSIjaChJXe0OR8GVvs9pBFjTuYsUJEddLinkr4GJH0w/PeL+6hVD/kuEHuF2jxdBKNLq8xbLHVD38srCcH8vXY3P3dcyC5ZA9ZVKW8wj0b9BZZ9kLmBBrrQVKfNT+cTEsoxuVN9jGyOMKdbXn9kocND2q18v+5bXhedXh72f2b3O5w2MR1NFvVmv3OwYuENoPrBNnuTiLHP2jP0/OUyb35AjA3tnnqjwDSPlHNNNwBEMQW1r0tIRuZw/CE6tfL989nJOFzrk98fDpxGXb7vd2c182Gf1xk8F0w1JjO2Oiwh1BnIwYoyKBvdVp8siLY/fXulxivuZ936d13Cwb3dgIoouWMZW7u4Gr2nXJGzFH87Vi0+WRFsfvr3S4xFurfsfoKLZyGJ+EOXVsvt2PfrEk9atq3sS+EcigyOjGZAJKoucnenyyItj99e6O/SzGQ7xhEMg2DpDWo8/AmAYzYmKZiYNSdj987IuGkxX2ibeoVNMD1WYdRw+aO4RlhNHRVaQMwxHVrAAAD+/iQwOZae/rRBB+12GJe8jE+nU0OxmYmZlszfMUtux/60uu50P2dPN0JVN7WI2SunhLNFpTpq6gzwujJZJkjf9Co2TDCWPy7li1g9zJRM+pEOaEvIg/ZG+KiZ44OWSGGOVWlw/fkGMVNyOc4iv0sGo2dYWnz6aBRfd5f/2oMZbIFJEKU8nKGBCoHXNAkmF8yrXNLqWVdpbitbuTJghQg/+JELD4bSz3sH95fL5a//agw+vbUcghnX0ArRoqSRyc+BKcaf58rUE8X9kVOU/J1ZLvf+LZA2aJ/4UVRAReem57c0VR4I4oKdxg38hyF6hCFwqS/15Jn6Tik2UbZQrdP4jApeDJmL4ZbnZ1eGddr2Q/xVFt1uNCJ41r3NUdxNPFaK5v0hRq46UjhCPhKvAFptm5yjK4VPKX7tNXszgAAAAAFSlCZyD4w+Tks/genkqSLmbuP71GiTg00rgB+AEAAA1RPd+7jUpY6gVdlHYDGd3+9G471QoEcd6J+TLaTmIsskYzeu+OhSHoei30P2PY62uY+Tn2HkS/CGwhp47c/LPv952A3ll2sN6vW81TBp06WMTzRu8B+H5PS506FO6f1v4w9aRk7DwA8JU+M7Fti64zwCuuh0oe4BIG67a9z61jvoSL/WHdgfz8x7xix4j97X4wk+Ah6Yz0yuyYrnU298hXtcLm5cLYeDqz4912vyddGoPzAB8+RnokX/xbDnefiE4KhgxW1z6RcpWaz+H6fkWnCMu0kUkAhiWLrLZiW7Itpa2O4Mu3jr8F7b4D3FvgphRUJQkXyNbSBepzErNfGRVQWl3a2/Za18NLNii/o5Ud/mc7TVJzynPdNE1Ws/rzoljEbok5aYmOIzmv999LQMkNP1Y76jOPyzfunqBR575zwAp06hbWXDD7tcqXCkztcTCcRZ0ovDMXHnRjxTUWdxH2DTG80nr/JABPuI4AAAC/U8wmHIaqgQjBJhDtYIHo2LmxIsIgABgjIB9msUKJgKvVO9pQeDXFHeAJyZguNsFp11xFMSC/6cobNBQ64cge6u8+j7yIZ4STa9Xf7ah5PXeo3V6GbFrBVbYUuYU2+bWNmu7aiVmT221EzQSORkRYqDgGcD1kJoNlOvwuStdWmHkMW/9+rfhd68JlGWJOeK4vg77o3OYHymoZuuMAST6wAY0URqYYxXFSDyEzV/AetIVVtv6ZxMnSE6RZXCpVTETdXYwxJ40A86MG44oO9N5NOlnhqwRSeSU39YiBWFjp9f8Q5Wm81TyhGQRNQvArKjSJ8UXfYZ0UFsdjBfpcSygf4FHBkeYBu/ixHvK9yyCRE4OI4Y+4sd6jTBxlc7ZMA55GVSLLaSKErk4U4CfyMnyyuWB0OKdcewHjP3gZurjWDA9F/iAJf84TDf2TOPBXMg1s4MtTXWFqHhN/Fhbku/HQgjoFGROaL3lBlxlPZsrItz2Kuydj2Wl5U2EzvijwbjHHSga5xMXEMUY4V3cy36JzfUBL+IxwYJgBmGn2c0Nve/wnl0GFHsZfRjothf8zzSisrvUz7EQD+fQ1ds7mxdPdZ7T38sf1sntyekH7ktZsrrsnnkWleDbgej5z8IuQ/wX2YvjDbFIxGUqT4BotwNTS33vmpkQ8NBFqQHmNAbXgq2Ro6G4QfGwXKG+mKtx/UG7NC0Qz27p8KCkq17arnu8SMhA7oB52pO2aQz7t3wREsuLjkmYMQ/LBsn4rGS7Hx7ZXNwQ/6gYF/lAGuSsPGtFGGzbvJ5nEwm8kxyueopyeHK+ZT3/kLHsblStEeZrgfymwnH2r4ESowqASZGtekhweTA9nRClJJ0BxCgsMWSw+46uE3P1R1puBiX5Sg2iVYKXKc6JCG2NixPrD+AxApEcNGhpVgoBKnkdSfzXUEB1SOuyHE73Dquci8LSS2OE/3SvWhECA3/yuHChclDR/bR+g+MbWOvy0ThuqyMcK3YVyR0S1gHh8a/Kt93srFCCRNVaqqY/5WCiYLG7IFPQ/EDixxcWw4dFDlY2/aauw2Fl6Ub4Ce7L0iSgx4ieGthO7PXXFbQfoEUyuPhlseWtYUCC4SqMnI0rVnTgDDQol97UkFuvzTNSRmMrHjypoYs18Xrn6ZRYMicsQ/9jUh1qTshpexLNS05oVrP1DANPqnIikAwFnYLPEUWugtZ+pnDs6X4MSIWBiLQEqWkxkW3zZ6n6lAZ84IDQfCkz/CPVQqPg6w3OCH35yv3/LVAfx0o8z10h3anBG4YbwiNXEoUX2wEjz+bPeyMB2RpQ+oAzwbatTMePQGsQJVc9qccvhJ9JgHs8byNmRc/MhmJDfZZZMez0BglLTIzXNseJGb9kB1PtNMS/ntofaM4OCPgcErRJCKIhugaOb5EKowL5a8kvDfxqEKR3fR6/fbk+mxnSr0jPgUpYKyxBFiPI2xFTW79fLLnefivwPEXS+A5x/u99IEQVKKwNScnn8WKEv3uAiDw2u71/SjWtrFLWJVSqrH51f5vqolNxV/Pictuxnry3vlNeUUchXl2Co5vCtSUyMw7g/eOiMazjudZ70YF/jN2wV658TzgQEI/x86Ds+8NnOpkK7OTMMIuAkf59P/CM7xGfejrAzv/xfnaJpmdn4Zkzdr+AlfZGHO8AN8JWGqhIgkwIHgev/UbMdN032lHxeEAs2pQSc07RPPyDoKZOE+7E6A9+0Ast13F6gncRdumtw0ejxq0mALyAVf0vedEtZR89Q4Z86o9dByaXSjtL1TFDZXS+7BeNOItkz6Bv1HKb232vpLadOZPEKgwXY5WmI6MWu6HkojIDN5+Ya8FSO67CTpnbV5ciGdZSUX62jRgfEbnLT6ivKHMbyOjOFj5NZhK2LaOEdQkkYEX6OmXcb6HP4NBe1VhN3HHWXAfiV8hXj5IiTcRAG0HPs3CzA64mymryo4XinYRuBIwP69G2BgTvV1SbJOj/Mg89+hDzs4vgshBNtXlzXLpM3LdTAo6tiyePu8eHgCUTw7xs9ZOMIaQ3YwbNwfr/kcaFOVh2U3a2aJ+MDsejnXtNXrxZdmKSuw9u6mV3BudFZgjd6Cdq83xjmnYf9Y0O/L97Da4RcvWV/PLQszca9e6wG9OOCSv7u2qMwuJJ37s0ir+gAhybbWMFFmC0SL26dFU46wGZaLcLydBNRHiwa3w4Ttswbng+R1lO+jDZc0UOGEko18ODfVRgVVsTR7pfO8a0Y3XHGTtnqjyWcKcIGjfAq/A3yi+gtNlDIVh9E5vYj28Y8Uvqklcgn9mOu30vVMjiYDvqvmQ2J63mci45przeOxJLOpU45Sx6zijoYKe8NANk5bausTk8lCQPzWAMjjVhPcT1FJRSawfZDQmpNz3JpCWBUrrLDOs0g47TID4UVBI1fnl7j4E3pijLkhdbysQK/IrdBaf9BwDX91v/p7Api/J1J0uzyrvDgDzLjPQsMecgNyHMWsR0JmHuhSt39z5pXFYHadrSFwPVZ5G5O1ZAw4vfYbggIkbv9w9gQgOjLiqeM75FWzZZ7qCHGRO8KjLX2R6VYeEx25DPsiGLzZHvX+yMUaschyLEqHDC7Bhp50JqnRFIWE8bE8pyYctC4XYzkdXerIfwMsuMdmT6pGBNl4zwTKvvkUdtt3fzoo3Fm5a7BQWRReVcn5rtIJht8J/6Ph8HmY1Wc6SE58Q1ZT8uuXHMyZn9W9fltRZMRw0gRAq9XObwd+icuW8+KnLjqHn0iufogr6lhhVyygfvJA8jqnMQwgnw2sOgJm3HJbwXSfr9/pOP1G99UDRy+rxhefDUvtW2MJWg+OmKJPQy1LoBORe5vsQ4rVED1QZZ0ZaCsevgdW01p5Am9UMDurNhRAqffPb4A/GdpmJqCHPnLjca2jngAR9BgYDYSfjT4HHHzN0aIE2Xb7GHYZlqTNJrQYaRtqkHtnZrWncBRergt+hJ9v4f2KeQO7inoQ9lEyrBfGx+Ts4IsKEBfUa29bfl6s0v5hSr8m6D2Jnv09+umR7/mfXUKiPMQp5vKUpIEC+GcwD6WgvkYPdqmsw3pV6QBwbkT/QUn6zfgSV2JGizKFpDKuxoUczKvkc4c+0huSzsxFYO4JWetDrC97/TFv0rp76IP97JTjEN7lBqWyOdAQRJdifZnvk2Wbu1O1m+F8X6Pbro+zto/4SF2YF02A1jRQf8/h6WCwsA6rj/tVfkTtiWTV1X7Ta8gPRaxSfl8s2JrhJ6H7UBzX1ecWHpmer5Mf7XnBGFwRKsm+cPsF8oW5I+O4tZwHDqSgm0FW4y2p70+NXiuHTF9SeACzcipgD3gSpOxhzDRQ/lXKWMMAm1O8RF2w4uootXWfvWZm6lvCa4MMSY6nEoBh0aAoXozQ8klKNVEOMrGHHAVqI6rQBO8fQAosIIbd7V9Djncsf8CqY1LAaRR5DmgMX+zsve1xEe2GKFQe2/qtDMJ+Djm+sk9MZw4msoH9OGiHQhcetNAqLnSVK6xfP8YVL4joz5fWnS/Xh00QoM4CiBOnW+eHKXifHBBl4cbYTKrFtXfwBV8xqs4ZR5KZdD2RuLuKgBAnnOIJ1l+yhIeJNyOhgyxUFcIs7BISKX/TzYrN278LY3Sgpv1ZxdoNKLnrVKV9nLhuJpv2zmaK/7rXAwB0cT66H9eqIEFFRgRcVgLYSun6KI4JUm2ldAQKW1lhkq2jLXRHo2xgm5zao8ixJWVJbmD62L6n4ti5TfdTv2idC3yY/dtBskmqZCbocnUkg0e0Jmk9eDLXI8c3uLdXs19CfqS4iwXkIOwR+vB0cQlriqM9alLPrCJiGCzbz0K/XGIFfB6wchhgfZzvhahE8e1GXDgZVCzR/LYZU3Y88/R2BAcQhUKFvg7fDHrTk0tFe+Z8f0G/lxNqWp+PsI6lXKJD2nCdzBoNE46fZyK0zZaGODoabw5nXX3+Vy6eA4T/Vh+Kgi1jU3pcsXKZ4IotBGCSgsGh/SaGsZ8ZpdOGolT59pqXzTpSDIgWtmL68xPRobItyl8K8ZZjn5TCEtNawE7fnxYWgNjDtflO/ue1xLwTRJ9ZEJfL6BW30J8ac9FL4e8qtKe84hmSdOaGvA9PtEVBgjhVyff5yI1RVFLCzGTo0nzPeqvpNk10oIoQ0mD2cfQVjQqnea+cA6xs3GcivGtN4gRjfHmp7iT5xSx3ZAYmLRlIDdGTt/CeIrvL3k3ffd+7bujpHZevnvVWMOFG0bX7/P8QmVdJXMFGLU5gP79qOx0XffROcgoajaqYHrYkYXvTZSZtwsO4t/h66GBB1HVXCks4NLWeizW+6zhJTqeDNxzfx23oMXSZr1NVEDGhO0livGtpB0Fl54HMrrTSSE9SSoFHHiAvDNsoNF06KGyv/UXEVKFB38JcVnpZLT5zSA4vKoNG8QtRYCu3CwFxAnrKFE+z5GDuJ5F8Exv6jviGWpxVGKxGJsjJ6i+hjQYO8Xxe/n4dyHpbC018oCUtqVu632nfl+2uXfJuWnemHR0VDFDa45LTs5BzQbV0RZb06EWrcI6zrlsT6EVAoaBAjRpMhofvj3kcNAA236GRs8E1A/VIk7OhSprAtha4JRiPFm2EaNIHMSzWOJddS3Ck7ksgz4ArwbXo+Phj9P+Q35cpFW48kyHZRkmW17pm1kVsCmhZw1KSy4tPg9qWmoYhICuIT0lO3KI3Fo25KNZG4M3jKg0+emmemkaM8WCX0GzGVd0LiFwOAesxN4pPoygP4oZ3l5PzN5J1mVaLG5Ua5uFUfkP/RDqf2mLdQC2WVX/iFcpHQYCJmmGf8y+PsB+gEH8wN6rFc3ECnnSLkB5fBJ4T4/jBHAOvQipatAnr0EegmfqOojShUaSs7jGx0jo10VN3zFLtBVTq+tZcsHsCdZY0CqAhpBfQuf/+yHMPbHmbfrYrIYWEHcNoqllT0JemjTN0pzS6ZG0ll67uPj5wn8tBB2WRzqNudU4htcIlokWALbsDfB/wc4WWLJjmPXUxyqkVC8TJlO0fXbZEfVCa3gkJxua4MG3GpOSihUUMuDb0JE+lUDpTdVvoWUD/ws0DRSwRZRuSGPNg/DDTNokAYJIo75KxdVQJwg620VO03MJmRV9IGn/y+YgoiiFSS1ut5Vg4F35CDLDWOUNe7nNweCjFqrdHouhMug5WLQ0zZu33xGGwO5Ok5ztKP19PUXzaykpeKXLNWumkRnPrhsEnWHVhBDb1+HsFJzgKXNbhtNj7hPbjY2qw2ZXgCEXMIQ8w/ym+K920lfdwAXfadeIThtY/dZ9e7+ii0zxAAYbcRGUN7oqB0AQJcZINGMa11IouApxFWCPMSCfXA8cCWptZoLws5r4RAv4IeXNnCxOCvuff0ROpC74QcPeQxHFWxh94IrIOf4KpZmUlsQZwCHYsNua1t0Dl+L5WTXDuZOhgkZvcqlc6YitAAAACJfunQcUhyANsH2EPjzC1RAcmjtjbtZWSI+pr9r2ts2TjsecLsq9uPerT5L8NLNEpGUhDUs3FJVEZXsF6jlynp+9hv/Y+VR0KNvX8JKrwNJvKNH/8hH4NWE47dp3uW3rtz+5hekCHJp/JBjfgZK6DFyOEG3ExTh2BPX/oGHAb7ZABFvw1lJ2LBACmHdm4N5DD58Uf+nGm/NhxRupazE4JRA2m+QNAHGzG1rfdRen5Qh/5VXB2WQZ6jaPjMKIM0Q/4e5uR9Z3vcl8FOZhX+rdveUfI377i5XhywzJF72cMEnRJq/5eV0YAj19fNud02YP94DHXektvd75DoLqByXIoRnKl+9nc11OgJb3j1WfWKuP2V4qsinTyV3NXFVI2MGYzlds+auY1DMAeCv8lf4aCQUr4vz7OLfc1A8V072U3NZZ6cAi6098GzhvDFuCAAar74w07fte0HNfHWmA9/yGp+o2C3r+m85ivNj2XYhlZPAjM8T7uWiS9NyFrgekIlQ9hB0fPtX+We6b2bM9bT7xFTRaj+AJ0O0E1/cdAABLL0kOT5/cqj2YTLjsASHidTidhPSpdWkzKbyaHOpyCfcFU4d2sWzV8OV9hh2DProz6BAewJaUR6OgLZp6Ge9FhPX7NIHkDeVPDIec6izvIWGQYv3tfO4roN4zThOWJWYgmvPJESrSiLvyci1csvfJRVFsWfxjuWDB1HHHlO+02NTlEB/AUYwvroWKqp556E44bFgtrXXBqtbRbDV7KH8hTHM6PtbqpuhYxcEbDZCLETxn+u9X1xlD7eoLAYK5BjPE62a4Bmo6pn+Wui7t5LXomuVDL4W3sRwUCK5FqjMyjSgYcQfoTdO414OvKI8WsklhkNN3KT7ivMy9kit/IjLBJ36Qqff+P8w7d73ebMDXxmQ0hNRO55Wxrdt2jc6Xibgd7QdBLJyJcLThU+ICN0F7YBH0BQYeCXZWQNJFuS7Ri7Tjm0luZI+WOWR0fAOCwku55lYFJLtM61hnE6xPNwYX17KxrPkRLys69JILn8NucZSerYp/1M4VKzSgEhkolKFzgyS6j4NgmzY+ygiyGhEQfLBtGamY0anLqHNhGq+whmhViNSzr6hAOIQId9UF1sKvLlML5CQetYBSvXH4dydaA4IDCoQO7h9erQnenGIB8DcO4KWl/T8fyZAw2ohHY+t5wBxIDnYxpCvKkDIS/dOXKmjuMVhJyJcJABXIXm3gSKsK7tOd/eL1SI1VUcOxbVvBq/FRZ+l54jp3Aaler7DTZ6/AabDnfmk5Xv8GVuTglqspeDrJNSA1XwBazPQ0g10jg1JGXqQkZfmVeSe8NB+5EJWluEKzshu9UMqOK//GaVsrDjGhL/VGJu2sZnqO6L4iKNGpGUC1MMg4/aMFOvJbQybRy1d0LF8UpFTrXPodDrAk3ZX0rvChz01w85TLCqAEbBxmyYYiUKXBYAhCEe5ywE/5i2i8JEB4mC6fPA+qc6WCjHl1aHEfsyMPJM9oWBclkTcDt53jowasAdHWJuBDFw6r4h6R4/ryz8I+vnNOmLc01pie2UOAKFZDnKcVsp87XiVhI7TXnAEfQBv9bbwQn+qr8wPH8irCTGds0VS1Ik7OyAmIsLPSw+FcpcPAoaQHzTx0mVChA7X7DmWP2Ma9QRP0UCOG11t502XNxdNU3aFCf1vrT0o5m3KepjeRFxSO/yhG16HAMqUE5HnFIcGoUB+YsGku7/Gsqutlj1jHOv9NW5QS4R/wLBmchYfmINfdr8Rx1mIyMJfabVx9z5JGiUuqxkCGmPuEvd3GHgJ8Qrn+oL2yIS9hbJciDslGd5Dw5hNVHdkUgxhWRouyK6+d91DXzs/jUJS59qDucX1zUEmhkJCq+R5ZRQoR2L/o2Op1iHWyNxDnrxXYgBakQZAuPF9BPWStbGJl/exKa5zmzwR3Fd5fPgzPt1sbVTopJ7j5QWtWE0gwWZGxngseSqGttrO3JZ4lj77JWe6ZlRBsWQVsNo6eqkfIfOnYrMkloQT/hdQEkGlNJbG5yK6NFQnLhtCcCSedXmQIMtcj8DbQdUeb8xJPwPqnoBRSmS37bq42VXvIwuwZZAsQoQIrZ1gARESJyYUZqAAF9EuR63YCccIuT8vngfWjP2CC4Qa6BWNq5TULcbqGsR9iO7mtJRBW1Io0O0ekb+jVIyXmLdUL9JWm/23eSYiaU5MwfdvPjj/REsdPiro5FJSktgjfBJSj4J6uM5YtYQJ4l/JcrUIRryUCFHZKYu1yg3sFtGIY8Cyth+W7enqwqubLk99o/t7MpnSrYyh+JUG4D7JnnRiUE+v0kR7I//fqBcQ/dGHaAojhKdgqN1TPLI+mIHXgfl9664OgYXXUVpz8wOS84jFtxmBB0AW66ZYZ3mVErLvUA7ow8rHbVw6tXEzUUpK+eykrzklqTQS15cRyhqxwXy09RnyXkHQuj7xSZEyufbm5dO2EZpzcVzU46bwjXH3rLDhlLRHNQVy9goIl1vC9oM3KjRGsqIQopHGSuD46T3W08mEQIp7fv9tIdipu/pwfq+NisCZ6PMYKT3pmv4sws+0V1UNxxzq6O1RSlDaM9vD6XYGqtNxPmi4A2OZZwtKf2DBI5hbKqauXG59hb12Pm9dPJ1bmAy25VyFsER8LpduMjGfrzD+AI7ZegQRd+ZMwydJCJVWFqXDZKNpHOl08wQ51zkjyJyxR8eRdhUePRPIqRi0wyeI+IeKiHb4oqotzAMDMk/jCywTj0w7Za9G0fYeY+vaTFfnkWghO/ISTIXWXaS21XfULKli/NBfpALz9FqJemiwZvr66Q75k95F028IHW8+9vUuX16ajhooLeNUUaYHjmRTbDtYQhm03SuSKdxeEYTV1mVBrVH4KV4dn/fX6q3drfewnIScuX/aVeIFNBj/saWnu9AjCrGXi/G789pULKplHR//2UIbaLhSTWlCeLYfYu2T19TTuefwqwtrj1xqz996teUVa9dyv3tFjJKyTriWTHUuHmsb8cIhhZoRyHBYEUVR8PdvmjZMP+KWeaHUb1gGTvKCcCh1AeompOWM3QVSSvb3gmdG0kR0oWX9rcuKxW0JnoYR4Ymsi0tElK2aONxqWrQ48D7tMjWRhpDs8CwOPwK8eo0ntNCvRtgJ++OG4IjLRoRz+AtYj2A8QQN1z8D+arRJ93Wiq03gJ2yfqCqZuSlACzDT1vZgfLItV3EB6kbKluRFY6l8i0QREDVxd8eek2F55dw+17In91pNhvrBK+PYy0fkNwf6ZkXUbjlGCx4xXXWF1wYh1/O8NDJblnbAxNwvCb5QSkP8+q8ASnqAI4JN5p6E6Hnqb8v19BwimYWEtOv+YW5HjVMEd70UZN5F0t2oK3eYC8CRzTA68bCAm8MjEYjdGmE3IQWQ0Z24sO0qS6BlKJTcqFvUxpzZPE3hQFXduw6+2rjdRjCkEfoQnRtViuS2yIYTHEHqoA6zJmWyDlQcS2H/3Z6T+1kVpuh7ENeO9fP21nwC0A95Qf3v4IdFOB1oy6xf158xTrJWCH31thL5KyDg8cc9Mzu29evpz9A6WJdC2MkxK7uPIiNmVrnDrH/K+qyfujfuob0z/qldhYgoCGxV/7KRBUZ2F26MxkraDG6y7oU4YdM3kSfr5eEGe39XFOlv+Yw7sVIf/0oDcr/8ZcXrCjZteE6h0HNWyyYpOsucZt3pn4NXDbJgqBHLepv2NOiR/dScrI7ges7R1dYeg+gjtLVWMUhslx3PGmGuB/AhPYxX0ro/nvhZQ7KzqPjFW889hBydkywy0Y9FMfQK6abg/VGNlsnQzza4P79+VGPZsXDznHgNzXOFTIUXAti25eYbN2zenZRTjchRr4qVdYx4lHnP96dYsqkEVHy3NNfyWM55HeLc4gNIleyrkwUOC+UrEvFXRDBw83WVj3MZifG2LKpaZNhjMQnH4m+HSzVRaeT1NMXIvIkXwN/3/ry9evY9J4zXbJo1SkLxuXprks0wUpXT/GM362S9AAw4bg6opKNw3gZujnuG14wNNvFuyP5+6wIUGCpz42iKeKo+ppTOH9cvUcnMgEtowS68bkJEpDhZOgiUS3DrYTKmIz6rfDSWqfZ7RsL+YcSBVVlTZRJv2IUKvEpw30y7//omRQ97GpXUN+PPIHk273qlWYKJV2E2Oc4oMGno5HoeNXqYvo2Z7ykR/1HqwYU1q1Hxu54kjiO8U0aTHOHQLBPe7VELaBy0ZOIC3RNiTAVmDF4wnCi2v1qYF94jj/1laGa7AdDl35UX6hyVXEsIWmoJ5xAJoJOvnhNBgynWnotZFKoAjxrZII6tUBnXYhnB0svtCPpum6TjAzQm1Lz167aQcxRqn0vFc9tTR1yZ/XpidTZMWa8XFchAdKsLbf0kQSe9n6rq8mzVs7Lzx4PPAzgy7kamex/YbkdlDDOLFxGg+5Znd7AvUyCVF5PEBkxOFUPnROiBCzsYbNpFXixK/49TgGDqQaelFXln19ToXJcy9LGBmAstn1/Kwav1EV++fw8rSEb9O3Rl+CHxX9hbwTU7rJUSF/aMr7LEyp7bR3Lvw5fpryf3+4pUwOK9Vt8RFBZMavimY22exIIN3fKyWHfiXuq7eSCzsJDEyF7JfamlTCreIWR8XcbpxAZ47XqmKYl3CNUvxSDQH0Qb/5u+sq0UEtkfBRqt7tk7rT3bcRBHLs3huGwrSsSzV668FJnIT2fwNJiyICsCXXID5EdEZFT3zo9TbUKhMsjJzud4JsuReZwo3yLg30HxHEkG8Z7vZs2wwXtItR5/tVFhj7iy+5aNBSEJKv6gB+6zq3d9bNqTq99jMjvVHEVLeolRlrfIgLLxbaItrvtjaCX2KLq1Q/Qfuu69U+dfgFrRrymifn1JHxTLXL+MfNMC3srXg+0E2VljxAgp4AMGH6ziG6538GM5O4QhwCXe8YMc5TrvJs9/20g5yK4fxaoF2Q6KSrWPTMajvpSUANRPfN0OgaDPsEv7P7zt1/F7hEZCnsgZ8PppVijCDHthOJeiMk6tPKCpZWbxj+d5w6LHNj5dwhSCuttdlkHGKkhpkRmVsZumUVKHzl26aPCAAGMKRFq8OwGpJJJXX5eG8qatIeiokojn7/nlkMs5e+zCLXvnEQgMjzKdqB074APqH+F/ovFf/GQIVZbMPr94FKUVIQKfmRUaMbUw+y1cJtv5EUMEM7Jm1Xtv8fZAFcArbRH2CCq/aPkvcD3J56HNEYWms43ziphHZ/oHQQJ9VAOQeB2T9jhTGnueBkFsLNfwlu3lx5QTsYAib4tbTLKzZcP5OfyKnjMyKS5sthnqHQ7PjLagS5ITmWuFefr5q0hQVwa4aA1N+omMOPB6y7D6UCIEOxncXY8C7JnOwCUmENNm28oQzNoPRwRd5bPNkVnSu8M/w5Bj9yb85wyk3a5xNqJFrV9+GZD/AMsODkxctjYm7XI4uWZVdvBo97oATKTuh+lEDZVkFnPl8Gl3NmwAmJf7h2W9m8qmGO48cQ0+hJO4MIj3deG3igqhV4I/QX9HDcquVxol+h13X+8JH5EJPrw/3xMR1EKy913imVZ1rTol6tXlwMAndFyrEbRkfxhanYVqCXyD7ABHoNQ9aG1R6s3VbLjenzTv3TP8HaI2yYxtS32bY0o89wDteIcKusuU4fNZnusMCOAX1mWWLVJocTf2qe039oMjUNvoWPbq/EQ900EmakcuedQvXT5TSY4TQjtt1hwytLO0YmAqm4HdNVImePOKyMYpuAguGoCn4WL6wGSaVt1tT8joeGKwQUmOkZCBnojyH8E5O9f7rkrQProYgHHojbv4P/x/D87lP6nRHPhwViq9x4B0uTAaUQmyzjk5Mt88fl+fVKC5k7KE4yxD6PxBD3edKn3k7ZMhb0HjbEXpS9gt/7f4RQi+wy+/roS8KcXeGI6uwOnFsMUNpOGI6RX0R0xUaKUz0w62dlfkzQodFOudPrVI4BEp1NCKf1wwbFPa2TSfsDJ8ymKdP35jy/0d44+ecPlR6zQCzYjqgmGTxBq0UCwhrgunQ5jtVbux60QKA+INfDTndENiBklUiP4ssWgLBDD9AUo3YcG7VYr6WFNnYiRWDfeAlD5FR5MysFO1zGQ0rAD00K+SmIpQrKBKJeO2ktR2RMJpmFH0R8rpTWsmVozexy8jVVL5QYd6p8aD3ejT9EgfqPsW2SkVy07rL4jQ+IV2PLkAnKrVHQy73b7+496xeUAnTcKo+ZDq0kMfn+D+shMuaq2sEmNqBTIsr8MwaP2XHEsnJN/0ptEHJ5JsEqMcaoEIrRJOxG6IGB9g2wqEuoafgU3rL2gjPMQzas19CbEKLnpRRSTgx/MAw/E+rw4/zxa+6SnzfoW3Ku1OBlu7aoytDD9FeVOwsGl6RYmAh1QIUcb0SM22FpVVXzBDRmc3TAOGxZ8GBGLJQdVtYL9WsdhegzFAgqTCJkFTv3SGIS8RBvVqFwf3Hfo3EIXnUfUPkkrzbEe5zh7Xy+kw30FaVmWYyeBS6kVFoD65sE8wl+5va+xVg8RU2DyoEpw9NekNLKA4ri/PV1WnJQ3jnDxwVnIM0Z3dqO2pyFbnuFpEuwA2LtiHvisKB5KA8pMZb8yrcuk7aG9V5RSgJJLgUrUtx8IusDa9TJlMyZ58W9CNRGcL+uwmprDlpDM8zlmDJUW34v8LMiSZH1saZFMgUF3IVJdxg3UKEmE05wcLvlkHnziOb0yrFAEDiO9yzkK3skZPNcWBmdDYK+OuVFMAn4rQjaQbAbJhy40WzWZe2HCyRsf+VyCWVHvv48BUvX8aQfWMJsizKOoBNBWBEkkAdqTdnnKX38zHV5raZddvgKOAWyX+mLdRZBh1/o6gJXM/+Kj5jb1nPhnFaKZSZ2c6129Ei+nuVb1SNOLxpxfoHZxJPu30fbsnKXCYpZqx0rkpRk+4lQocx6CQEiAgBX7cjC2i+wqoSCwrgwBnujZZl8NDxPw9sqBMm7ofjOiPiI6l+Hrw/x8uHSYYygFZ8Hd2vkPridajsh8QENHrpluIPkkwzEKgb120e/fA1Caxg8t/5iJD02k/y29zsuXwXcWRgCN8dUUZRyq7tkWAj/4MA5hg9J0eAwkcciJ77flq/bH4n7Bu0G/NagmUn/k+oIMdzQU8yMdxDjzJz7eXF9ojwEDxrG6rmjhPJtmzoN1hn7vSdnt8aVjs6hQoI1ruje+wvuGTfLHq6ZItnmy1YxAIpPkwrK9gixgFjLdPGmQjlhIAMHqvN9jSPFC512xfz3qxDE26ly40KCEHf/9Y+TTvtwD/U331fmK40pcFBEex4Uk9Rzpf7cUKakBU///KGfnGEdaD61Z9OtHELBDx4QqFJh1VtwyuJuhDDNZnJmXiRqzXINfxEfBCuxel02a4/U2HJpQyPwy0YeXxTsCrLdLTNVvxJVZxV+B3pf5AYRqsLAqEAI24uc0VHS6LFuDfDym2C2PBNxm5VnqnhJ7qnynawT+q383SPrVwG+teU4bS+z/Eu25LSF/j01+Ot/q0xOrXeSJBj+PWCSw4VuwBsBmJeLTUxg37jVkKfoJnAAds0UQUPhiKNsXjCPvydArUGgZBEv7Yf+MlMqlcugVphbolDj2h5Qwyne8HXhhMDc8QYHxzX3r9ImXQISDRTgj0wQ1CzzP9EOO532Q7+o52upBE2Wsbt5ou5B0kdifPtg6mE2iFUhtYGqh5R34Ub/3Y/buCKfRANNIjHHYHZy+n0qg4ALCHub5KGJD66Rfqi85oYWNBMMygFegSIPtRDvxmK8H/egvcTxwupwPFbm6hR5eEqGoj4Z6wgXmizv+yGxr485hMGiEN/yOt+q+TXD4pGhHuYFdZoVuaJZfBUd5+QI7J64yD2Cj453BVbe6dzf2bdB+E1WWDs55rEpFUbpo8MrtwrfrMryNu4S4ohW68BuJihvTb1QSGfkjtsIGweLUvm6BwgNNIqU1+9b+aODO5e38dPqt19rJbIW5SrldZG1ut+ZgXFYrxmvAA3FHyKfhR+FzcpW324Y6ExvZxgfMzGPctQz473NoFtRtCcBem+20/b+MeIrein/GQOwKmqpbKQhzc2Dj0QY9ieNajnbCw9LeftuRt+FmIHyucTdYbut/OOu5vf7Z0L48kJpTw9OEIOGjcCgMDBArDyREybgJd9a+SfwNCjxvT+iY7OcX1Ilk0PeqUMt1J344MLTBbDEE/FqoiZIopwZwUlyBAabxpsDl2t404bfmhBtBwHXHOlGqPNZ+HBISW2wGRFuRwZDXjW1kMZnFkwfny8dwgwHQ2xz24Ba9H/dizagzG6ZB+RmOXPFfVr/DlyvobwKH3g/mRjwLSghWp+grcyl3DR4bxib6jDjM1jI6hgkerBR5SmG6dtuMlE9QyOI+cVnJUxVNFpQirugPzL8udK1CbsXv6Ho5a/mTomOcNC4i46vObQf9VhExPrO/iTMzhwkASJgEnlSlD5nQ8iIRHsB/4nqA+GVLCksNIAKz0jkdYKvP/Lxn0AccuHcS9yWCrDuCxjcOuhg012d8rAZ1pDScnt/BXBrxBG0GDHVBRmcEoS3+EOpZu5bNbuVmVA5SAqfzc90UWP/iwozKLeo/TMcQP/R3NJM6Rt+y1ch+UDyoZyXAILlZJsDq09tuqgY49sgKi0Q8XX0G7YBLjt9r8b/B5Ji4IdhdIV86DFlxVxGNtmDyM8G/PWEgOVFu4RcslZQp6ANya5IViRQTZPxifWONmfGinDV5EOBU8J5pZOMAHPVWJ36Z+E0l9r6OuDEH76od61hBirqzO/PVjHpx5ZA3pLiK0TWFsGV585lcfo/O9dxpZjxXnCLhLl2aVeZ8LJBVokFbDaI1yf5LN/Ji10EJh0M8+OMjkQKACJ9kceHwA0BbrRumZ/dZO8hOs5i6SY307bx+i1VOMO8XNp0Lp9VbodllTGFzVoRxOvo/SXkjx8CKJpic9I/5ap4ZhFbzoHZVrqkOWqFkt7K4/mP8jGCkCmh7NPXyFG8IKDLJmFlZ2MeJPFOUg9jgchHio8cMs2SQRCKCBzBEmekvFeOOSyaLfMC69uQfvirpnS3TmTAckxoldZiDHJTXaaG8MTzipe1RbFR8xEnlgKyn2QazGLslD09g8q3tyGyD2MaFDVNpwMLRG4CIlwJYYczepIOQxqUaJk6VrM5i/OHrtx1+B0eLIDjFio4LcJEA4jVjeXjxUr5C2/bVXX+EShhJI4SopwsFkv1AMJmSo6FNKDyeRezNm5rnmyus0WAN4czEfNJfc1NA6EIjrffd8lHI119zj39a8uqcHVB5rHx1lI4Z3r0tU+dpAOvGbZucKeBgSYXLh9kqC5c5ZamnUCYRh1QDqKjzJtrp5h5n15EJhYlVPid39/Vuw5/QyEMelWrTRQPtMEMR9zuwfQR/17Bx3vIGlVivGZgxIcqn5C5tkFXIthLgVz3PAJRKT/ExN6i6UxhX+Dwp75TrB8mCk4104yB7B30S4QOIz6ycWwcD6BRA6kNyngN13SEWnWaFCl+fRqeQDtz8KlrNg3hI4FUDkpJ5rxY8zQi4kQza9Iiw6n4NQ/m+2LVmQuyhJ1NVA1xt+PVlCccHDbzGZ6/1J3UaM+F1GrpFv/Yv4J0oFEg5C4BYDt20HPxiMpsczeK5nrCN6jKWrY1O3EmbdozpYySjCyH3uLGOWZNVN1rjx0adu4olnny60d8yPhAY0uz8KstUYXMJpH7XwEBkvlygblxCB/qDCoOjUhFuk9DuIZ8KtWFL7p6angg8wI+kmbPavMJC3RAu7JZecyZFNkA6pHKy2EQpn5vODRNuFRQXZDGXCTvgNiLjzNeV2utVhhPvXdzeIUbI93YKz81QpGCp0Wd+QVKvZPhBKuXNSTHq4CnIv9djoDCpsz4YBVbgCtTShr/ELFW7J/6r4gwwJ36thxpN/Cp6+Ss/uOLTQqPDWN37MRkMsomLciUFoc49hLZw6MXD3+p2bcjrwLa7AXLsYMXV2p7ICejMC40i5xWRMWem5Ozsr7txnniCTHVETHZlpnx3mBXJdghjAWHtnoZfbHxKRd0gOzMXdD0oM7H5yLFZiVbkMHogSBHPBk6hjAGfDitMMaioseDt9Z5rR9NXOxecUsc5VzlAETp2UNo3v2QymFYRW3DA8Hz00QA6ackLLJGIlB2edUI7Fi8V2u1zhILMTwErdIsMgNFSUPkkvSpsHmRkfJqInjVqyKmAKOF0qSpi0mUgsOiHumUeGYUqQV7H3a9BRjAasu/yNfXxf5/gCv6iLoQo4nE/abW9Mzuu4JN2bqN+SQGCzpffdxntOMZwgyHYYm0FnKN7Ynv/4eclHS8v1QkBaOChlMKmoUx0jP1fQHEvEqx0uWs0LM0gEl1gG6fISQbUctCCWDJb528mi4q65irdOKDhLoV+UdBgDnwh1fo+6N1APjovAXcTcQMyiVT/sO4tBbixSPwidbTfM7AdqKlxQCNNua/Ifn20L3qa7bHTaWmzkOCpzMmS/YFNzUkepq6+J5domnkJ9nfy63PceF2LApvIWOEk1aLhmBezFzcF2HmzzH6WosLjeHVrQM1aFmO2sLZDIBW8eNxAsTpb5baUnQypzT4/UkBRHdbBg0kA6qcI/sDnBvyk+nr+ataYHI94YxsB0RWV/s9bYF/4rGcKCMFRyi/2+HnNgA+1JxvyT/Jm1b/Ubnq2y9vDiz2aGpMnO+15epj38VgHWILUMTJK3VQkrFPpruAZAn4g1fY5yH2kfUBQEBDvtXtSzK6K/n2dkLnezMj6vq7EPej/mO4+X69I9j5E5kLfb+sKAR7GOw4BHnUShHmMOVBTlVK/yp5LAvSvGAJmR+fXRhXVAPONRhfmGwkFC+FnL4Mo5vhVY58iJQknaiBdJnGxwjf+HpVp4mZiifDEM7l7xQioPcxqWlIgBHQXFDSsiWmlvWJCDxhpnH9r1XmIsdUEWlP0TjRC/WOZ2OR2ITJYYCe5zmjMSW4YM+ZU1P94ONfJ1xAZD++aVXmRGPmMdV9rCphfQDOAkkjRCe0kEsMfzz9bQkXoInkM0SyPiHnzxYQnx0n9D00ITAC+7ErG/abZs9eng6sazJL3xkNTWS8szEaFU8BxUmBf+R0NGcMlfIH9TVaMmz0wKA2W1o+tdRaMBXXmFg7fgaSooIwiPd2YT1CGpituxZYcwOdWKV/XtZxQM5+X6TWs4GB+fMQy1dk0xWRgdcs0rXF0P/5rHBIK5iDV1pViQjp2Brahd+jdIfwHBzEa2DnmGkELAhezqwZwsUSINyMdl9A8Oj7xPvywjQO/gFv6qlE4S5uarca1zQdk+6ApxNetYIH/J/lQqLtPj0/3Bf4cGiiqwEqDci5JW2hcxmEd6KtKPaLx5h50YNtSUIvvQOX57O9CIt+SYwI/adpUaMl9GTPDIcgpgysy3HKPfXOs01Nz8FCkCF7RQq14R3UjlzF9zpCcb6MrFby6lsVNebOStR9j6YV607Wbdb5iKaZmxmcK/15sJpApjO004P7wrKeWUsDrAGmTU3XTCLXDls8Xvoj4HYEvCFqxHbyOUGx66Bm6scOIPAHKKZXTMu6gRiOQ9m4kN5W/DoOpo2t6RNhJB7ZTX4hytv9rIiuqKwBfb4wSx8JpineRjiK+TJJ5UQnbt2ymMmi76H90ahwGcZt1HGJFFo5/ToUhJGSbQiZ5MI7GSQZQAAAAAA==" alt="Knihovna videí s tutoriály">
+    </div>
+    <div class="btnrow"><button class="btn btn-primary" onclick="restart()">🚀 Vstoupit do Kontexty (restart dema)</button></div>
+  </div>
+
+  <div class="devnote"><b>DEMO / návrh flow</b> — data se nikam neukládají. Interně sbíráme (uživateli se nezobrazuje): zdroj akvizice, motivace/pain point, cíl s Kontextou, námitka před nákupem, co zkoušeli dřív, typ práce, obor, škola, fáze, deadline, výsledky kvízů, nabídnutý upsell + výsledek. Obrazovka „Ladíme na míru" se zobrazí po upsellu a sama přejde na souhrn. Ceny a názvy produktů jsou placeholder. Mockupy obrazovek (Moje cíle, Zdroje, Canvas) v produkci nahradí reálné screenshoty.</div>
+</div>
+
+<script>
+const screens = [...document.querySelectorAll('.screen')];
+const data = {};
+let idx = 0;
+const TOTAL = screens.length;
+
+function render() {
+  screens.forEach((s,i)=>s.classList.toggle('active', i===idx));
+  document.getElementById('pfill').style.width = ((idx)/(TOTAL-1)*100) + '%';
+  const id = screens[idx].dataset.id;
+  if (id==='upsell') buildUpsell();
+  if (id==='building') startBuilding();
+  if (id==='done') buildSummary();
+}
+
+/* --- ladění na míru --- */
+let buildRunning = false;
+function startBuilding() {
+  if (buildRunning) return;
+  buildRunning = true;
+  const cit = (data.citation||'').startsWith('Nevím') ? 'ČSN ISO 690' : (data.citation||'ČSN ISO 690');
+  const msgs = [
+    [0,  'Ukládám vaše téma a cíl…'],
+    [22, 'Nastavuji citační normu ' + cit + '…'],
+    [45, 'Ladím akademický styl' + (data.field ? ' pro obor ' + data.field : '') + '…'],
+    [70, 'Propojuji Zdroje a Moje cíle…'],
+    [90, 'Připravuji asistenta na míru…']
+  ];
+  const pctEl = document.getElementById('orb_pct');
+  const stEl = document.getElementById('orb_status');
+  const DUR = 5200;
+  const t0 = performance.now();
+  function tick(now) {
+    const t = Math.min((now-t0)/DUR, 1);
+    const eased = 1-Math.pow(1-t,2.2);
+    const pct = Math.round(eased*100);
+    pctEl.textContent = pct;
+    for (let i=msgs.length-1; i>=0; i--) if (pct>=msgs[i][0]) { if (stEl.textContent!==msgs[i][1]) stEl.textContent=msgs[i][1]; break; }
+    if (t<1) requestAnimationFrame(tick);
+    else setTimeout(()=>{ idx=Math.min(idx+1,TOTAL-1); render(); }, 550);
+  }
+  requestAnimationFrame(tick);
+}
+
+function pick(el) {
+  const group = el.parentElement;
+  [...group.children].forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  data[group.dataset.field] = el.querySelector('.lbl').childNodes[0].textContent.trim();
+}
+function pickMulti(el) {
+  const group = el.parentElement;
+  el.classList.toggle('sel');
+  data[group.dataset.field] = [...group.children].filter(c=>c.classList.contains('sel'))
+    .map(c=>c.querySelector('.lbl').childNodes[0].textContent.trim());
+}
+
+function collect() {
+  const id = screens[idx].dataset.id;
+  if (id==='welcome') data.name = val('f_name');
+  if (id==='field')  { data.field = val('f_field'); data.school = val('f_school'); }
+  if (id==='topic')  { data.topic = val('f_topic'); data.topicLater = document.getElementById('later_topic').checked; }
+  if (id==='goal')   { data.goal = val('f_goal'); data.goalLater = document.getElementById('later_goal').checked; }
+}
+function val(id){ return document.getElementById(id).value.trim(); }
+
+function validate() {
+  const id = screens[idx].dataset.id;
+  if (id==='welcome' && !data.name) return warn('Vyplňte prosím své jméno.');
+  if (id==='source' && !data.source) return warn('Vyberte jednu možnost.');
+  if (id==='degree' && !data.degree) return warn('Vyberte typ práce.');
+  if (id==='phase' && !data.phase) return warn('Vyberte fázi.');
+  if (id==='deadline' && !data.deadline) return warn('Vyberte termín.');
+  if (id==='field' && !data.field) return warn('Vyplňte obor.');
+  if (id==='topic' && !data.topicLater && !data.topic) return warn('Vyplňte téma, nebo zaškrtněte „doplním později".');
+  if (id==='goal' && !data.goalLater && !data.goal) return warn('Vyplňte cíl, nebo zaškrtněte „doplním později".');
+  if (id==='citation' && !data.citation) return warn('Vyberte citační normu (nebo „Nevím").');
+  if (id==='motivation' && !data.motivation) return warn('Vyberte jednu možnost.');
+  if (id==='kgoal' && !data.kontextaGoal) return warn('Vyberte jednu možnost.');
+  if (id==='tried' && (!data.tried || !data.tried.length)) return warn('Vyberte alespoň jednu možnost.');
+  if (id==='objection' && !data.objection) return warn('Vyberte jednu možnost.');
+  return true;
+}
+function warn(msg){ alert(msg); return false; }
+
+function next(){ collect(); if(!validate()) return; idx=Math.min(idx+1,TOTAL-1); render(); }
+function prev(){ collect(); idx=Math.max(idx-1,0); render(); }
+
+/* --- tip: profil — návodné porovnání --- */
+const PROF_DEMOS = [
+  '„Sociální sítě jsou v dnešní době velmi populární. Mnoho lidí je používá každý den. Tato práce se bude zabývat sociálními sítěmi…"<br><span class="dim">→ Obecné fráze. Žádná vazba na vaše téma. Na první pohled AI text.</span>',
+  '„Nákupní rozhodování generace Z se formuje v prostředí, jež starší kohorty spotřebitelů nezažily — v prostředí algoritmicky kurátorovaného obsahu. Předkládaná práce na tento fenomén nahlíží optikou marketingové komunikace…"<br><span class="dim">→ Odborný text, který zná vaše téma, obor i cíl práce. Zní jako od vás.</span>'
+];
+function profDemo(i) {
+  document.getElementById('cmp0').classList.toggle('sel', i===0);
+  document.getElementById('cmp1').classList.toggle('sel', i===1);
+  document.getElementById('cmp1').classList.remove('pulse');
+  document.getElementById('prof_demo').innerHTML = PROF_DEMOS[i];
+  if (i===1) data.sawProfileDemo = true;
+}
+
+/* --- kvízy --- */
+function quiz(el, name, correct) {
+  const group = el.parentElement;
+  if (group.dataset.done) return;
+  group.dataset.done = '1';
+  el.classList.add(correct ? 'correct' : 'wrong');
+  if (!correct) [...group.children].forEach(c=>{ if(c.getAttribute('onclick').includes('true')) c.classList.add('correct'); });
+  document.getElementById('qx_'+name).classList.add('show');
+  document.getElementById('btn_'+name).disabled = false;
+  data['quiz_'+name] = correct ? 'správně' : 'špatně';
+}
+
+/* --- tip: zpětná vazba — konkrétní pokyny --- */
+const FB = {
+  short: '„Sociální sítě zásadně ovlivňují spotřebitelské chování mladé generace."<br><span class="dim">→ 9 slov. Přesně podle zadání.</span>',
+  formal: '„Sociální média lze pokládat za konstitutivní fenomén soudobé spotřebitelské kultury, jenž signifikantně determinuje nákupní dispozice mladší generace."<br><span class="dim">→ Formálnější rejstřík, zakázané slovo nahrazeno.</span>',
+  example: '„Sociální sítě zásadně ovlivňují chování spotřebitelů — dle šetření AMI Digital (2024) nakupuje na základě obsahu influencerů 38 % českých spotřebitelů ve věku 16–26 let."<br><span class="dim">→ Doplněna konkrétní data z ČR včetně zdroje.</span>',
+  sentence: '„Sociální sítě představují významný fenomén současné doby, který zásadním způsobem ovlivňuje chování spotřebitelů — především generace, která s nimi vyrostla a považuje je za přirozenou součást nákupu."<br><span class="dim">→ Změněn pouze závěr věty, začátek zůstal beze změny.</span>'
+};
+function fbDemo(chip, key) {
+  [...chip.parentElement.children].forEach(c=>c.classList.remove('sel'));
+  chip.classList.add('sel');
+  document.getElementById('fb_demo').innerHTML = FB[key];
+}
+
+/* --- upsell --- */
+const UPSELLS = {
+  plagiat: {
+    title: 'Chcete mít <em>100% jistotu</em>, že práce projde?',
+    sub: 'Trápí vás plagiátorství a AI detekce — máme přesně to, co tenhle strach jednou provždy vyřeší.',
+    prod: '✅ Checklist: 47 kroků k práci, která projde každou kontrolou',
+    list: ['Krok za krokem projdete celou práci proti plagiátorství i AI detekci','Přesné nastavení Kontexty pro originální výstupy','Co zkontrolovat před odevzdáním (Turnitin, Odevzdej.cz…)','Jak reagovat, když vás vedoucí podezírá z AI'],
+    price: '149 Kč', old: '490 Kč'
+  },
+  cas: {
+    title: 'Chcete psát <em>ještě 2× rychleji</em>?',
+    sub: 'Tenhle průvodce vám ukáže, jak zkombinovat Kontextu s dalšími AI nástroji na maximum.',
+    prod: '⚡ E-book: AI workflow pro studenty — Kontexta + nástroje, které šetří hodiny',
+    list: ['Kompletní workflow od zdrojů po finální formátování','Které AI nástroje kombinovat s Kontextou (a které jsou ztráta času)','Šablony promptů na nejčastější části práce','Plán: hotová kapitola za jeden večer'],
+    price: '149 Kč', old: '490 Kč'
+  }
+};
+function buildUpsell() {
+  const key = (data.motivation||'').startsWith('Strach') ? 'plagiat' : 'cas';
+  const u = UPSELLS[key];
+  data.upsellShown = key;
+  document.getElementById('up_title').innerHTML = u.title;
+  document.getElementById('up_sub').textContent = u.sub;
+  document.getElementById('up_prod').textContent = u.prod;
+  document.getElementById('up_list').innerHTML = u.list.map(l=>'<li>'+l+'</li>').join('');
+  document.getElementById('up_price').textContent = u.price;
+  document.getElementById('up_old').textContent = u.old;
+}
+function buyUpsell(){ data.upsell = 'koupeno'; idx++; render(); }
+function declineUpsell(){ data.upsell = 'odmítnuto'; idx++; render(); }
+
+/* --- souhrn (jen profilová data) --- */
+function buildSummary() {
+  document.getElementById('done_name').textContent = (data.name||'studente').split(' ')[0];
+  const p = [
+    ['Jméno', data.name],
+    ['Typ práce', data.degree],
+    ['Obor', data.field],
+    ['Škola', data.school],
+    ['Téma', data.topicLater ? null : data.topic],
+    ['Cíl práce', data.goalLater ? null : data.goal],
+    ['Citační norma', (data.citation||'').startsWith('Nevím') ? 'ČSN ISO 690 (výchozí)' : data.citation],
+    ['Fáze', data.phase],
+    ['Odevzdání', data.deadline]
+  ];
+  document.getElementById('sum_profile').innerHTML = p.map(r=>row(r[0],r[1])).join('');
+}
+function row(k,v){
+  const filled = v && v.length;
+  return '<div class="srow"><span class="k">'+k+'</span><span class="v'+(filled?'':' pending')+'">'+(filled?esc(v):'doplníte později')+'</span></div>';
+}
+function esc(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+function restart(){ location.reload(); }
+
+render();
+</script>
+</body>
+</html>
